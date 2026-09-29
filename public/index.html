@@ -18,6 +18,12 @@
   /* superficies */
   --bg:#F2F2F7; --surface:#FFFFFF; --surface-2:#F2F2F7; --surface-3:#E9E9EE;
   --glass:rgba(242,242,247,.78);
+  /* liquid glass: superficies que refractan la luz que tienen detrás */
+  --glass-card:rgba(255,255,255,.62);
+  --glass-edge:inset 0 1px 0 rgba(255,255,255,.95), inset 0 0 0 .5px rgba(255,255,255,.55);
+  --glass-brillo:linear-gradient(180deg, rgba(255,255,255,.5), rgba(255,255,255,0) 60%);
+  --blur:saturate(190%) blur(26px);
+  --luz-1:rgba(0,122,255,.22); --luz-2:rgba(137,68,171,.16); --luz-3:rgba(52,199,89,.14);
   /* texto */
   --text:#1C1C1E; --text-2:#3C3C43; --text-3:#8E8E93;
   /* acento y semánticos */
@@ -39,6 +45,11 @@
 @media (prefers-color-scheme:dark){ html:not([data-tema="light"]){
     --bg:#000000; --surface:#1C1C1E; --surface-2:#2C2C2E; --surface-3:#3A3A3C;
     --glass:rgba(0,0,0,.72);
+    --glass-card:rgba(28,28,30,.55);
+    --glass-edge:inset 0 1px 0 rgba(255,255,255,.11), inset 0 0 0 .5px rgba(255,255,255,.07);
+    --glass-brillo:linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,0) 60%);
+    --blur:saturate(190%) blur(28px);
+    --luz-1:rgba(10,132,255,.30); --luz-2:rgba(191,90,242,.22); --luz-3:rgba(48,209,88,.16);
     --text:#FFFFFF; --text-2:#EBEBF5; --text-3:#8E8E93;
     --accent:#0A84FF; --accent-2:#409CFF; --accent-soft:#0A2540;
     --green:#5BE47C; --green-soft:#122A19; --green-line:#30D158;
@@ -52,6 +63,11 @@
 html[data-tema="dark"]{
     --bg:#000000; --surface:#1C1C1E; --surface-2:#2C2C2E; --surface-3:#3A3A3C;
     --glass:rgba(0,0,0,.72);
+    --glass-card:rgba(28,28,30,.55);
+    --glass-edge:inset 0 1px 0 rgba(255,255,255,.11), inset 0 0 0 .5px rgba(255,255,255,.07);
+    --glass-brillo:linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,0) 60%);
+    --blur:saturate(190%) blur(28px);
+    --luz-1:rgba(10,132,255,.30); --luz-2:rgba(191,90,242,.22); --luz-3:rgba(48,209,88,.16);
     --text:#FFFFFF; --text-2:#EBEBF5; --text-3:#8E8E93;
     --accent:#0A84FF; --accent-2:#409CFF; --accent-soft:#0A2540;
     --green:#5BE47C; --green-soft:#122A19; --green-line:#30D158;
@@ -219,7 +235,7 @@ section{margin-bottom:26px}
 .srow{display:flex; align-items:baseline; gap:12px; padding:11px 0; position:relative}
 .srow + .srow::before{content:""; position:absolute; top:0; left:0; right:0; height:.5px; background:var(--border-2)}
 .srow .k{font-size:15px; color:var(--text-2); min-width:0}
-.srow .k .sub{color:var(--text-3); font-size:12.5px}
+.srow .k .sub{display:block; color:var(--text-3); font-size:12.5px; margin-top:3px}
 .srow .lead{display:none}
 .srow .v{font-size:15px; font-weight:600; font-variant-numeric:tabular-nums; margin-left:auto; white-space:nowrap}
 .srow.total .k,.srow.total .v{font-weight:700; color:var(--text)}
