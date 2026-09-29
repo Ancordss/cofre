@@ -1,0 +1,1732 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#F3EFE6" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#14120F" media="(prefers-color-scheme: dark)">
+<title>Cofre</title>
+<style>
+/* ─────────────────────────────  base  ───────────────────────────── */
+:root{
+  --paper:#F3EFE6; --card:#FBF8F2; --ink:#16130F; --ink-2:#4A423A;
+  --muted:#8B8073; --rule:#D9D1C2; --rule-2:#E8E2D6;
+  --brass:#96652B; --brass-soft:#EFE1CB;
+  --settled:#2E6046; --settled-soft:#DEEADF;
+  --debt:#9E3527; --debt-soft:#F1DCD5;
+  --shadow:0 1px 2px rgba(22,19,15,.05), 0 8px 24px -12px rgba(22,19,15,.18);
+  --serif:"Iowan Old Style","Palatino Linotype",Palatino,"Book Antiqua","Hoefler Text",Georgia,serif;
+  --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,Monaco,"Cascadia Mono",Consolas,monospace;
+  --r:10px; --pad:clamp(16px,4.6vw,26px);
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --paper:#14120F; --card:#1D1A16; --ink:#F1EBE0; --ink-2:#C6BCAD;
+    --muted:#90867A; --rule:#37332C; --rule-2:#282520;
+    --brass:#D9A868; --brass-soft:#2A231A;
+    --settled:#84C4A0; --settled-soft:#1B2620;
+    --debt:#E28F80; --debt-soft:#2A1D1A;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 30px -14px rgba(0,0,0,.7);
+  }
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0; background:var(--paper); color:var(--ink);
+  font-family:var(--serif); font-size:16px; line-height:1.5;
+  padding-bottom:calc(78px + env(safe-area-inset-bottom));
+  -webkit-font-smoothing:antialiased;
+}
+body::before{
+  content:""; position:fixed; inset:0; z-index:1; pointer-events:none; opacity:.05;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+@media (prefers-color-scheme:dark){ body::before{opacity:.07; mix-blend-mode:screen} }
+button,input,select{font:inherit; color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--brass); outline-offset:2px; border-radius:2px}
+
+/* ─────────────────────────  tipografía  ───────────────────────── */
+.eyebrow,.lbl{
+  font-family:var(--mono); font-size:10.5px; letter-spacing:.17em;
+  text-transform:uppercase; color:var(--muted); line-height:1.3;
+}
+.num{font-family:var(--mono); font-variant-numeric:tabular-nums; font-feature-settings:"tnum"}
+.display{font-family:var(--serif); font-size:clamp(28px,7.6vw,36px); line-height:1.05; letter-spacing:-.015em}
+.h-sec{
+  font-family:var(--mono); font-size:11px; letter-spacing:.2em; text-transform:uppercase;
+  color:var(--muted); display:flex; align-items:center; gap:12px; margin:0 0 14px;
+}
+.h-sec::after{content:""; flex:1; height:1px; background:var(--rule)}
+.settled{color:var(--settled)} .debt{color:var(--debt)} .brass{color:var(--brass)}
+small,.small{font-size:12.5px; color:var(--muted)}
+
+/* ─────────────────────────  masthead  ───────────────────────── */
+.masthead{
+  position:sticky; top:0; z-index:20; background:var(--paper);
+  border-bottom:3px double var(--ink); padding:14px var(--pad) 12px;
+}
+.masthead .wrap{max-width:820px; margin:0 auto}
+.mh-top{display:flex; justify-content:space-between; align-items:baseline; gap:12px}
+.mh-month{font-family:var(--serif); font-style:italic; font-size:15px; color:var(--ink-2)}
+.mh-right{display:flex; align-items:baseline; gap:10px}
+.sync{
+  font-family:var(--mono); font-size:10px; letter-spacing:.14em; text-transform:uppercase;
+  color:var(--muted); display:inline-flex; align-items:center; gap:5px
+}
+.sync i{width:6px; height:6px; border-radius:50%; background:var(--settled); display:block; transition:background .3s}
+.sync[data-s="saving"] i{background:var(--brass)}
+.sync[data-s="error"] i,.sync[data-s="conflict"] i{background:var(--debt)}
+.sync[data-s="offline"] i{background:var(--muted)}
+.mh-main{display:flex; justify-content:space-between; align-items:flex-end; gap:18px; margin-top:10px}
+.mh-side{text-align:right; flex:0 0 auto; padding-bottom:4px}
+.mh-side .num{font-size:15px; color:var(--ink-2)}
+.bar{height:3px; background:var(--rule-2); border-radius:2px; overflow:hidden}
+.bar > i{display:block; height:100%; width:0; background:var(--settled); transition:width .5s cubic-bezier(.22,1,.36,1)}
+.mh-foot{margin-top:8px; display:flex; justify-content:space-between; gap:12px}
+.mh-foot .num{font-size:11.5px; color:var(--muted); letter-spacing:.06em}
+
+/* ─────────────────────────  layout  ───────────────────────── */
+main{max-width:820px; margin:0 auto; padding:26px var(--pad) 40px; position:relative; z-index:2}
+section{margin-bottom:38px}
+[data-anim]{animation:rise .5s cubic-bezier(.22,1,.36,1) both; animation-delay:var(--d,0s)}
+@keyframes rise{from{opacity:0; transform:translateY(9px)} to{opacity:1; transform:none}}
+@media (prefers-reduced-motion:reduce){*{animation:none !important; transition:none !important}}
+
+/* ─────────────────────────  ledger  ───────────────────────── */
+.ledger{border-top:1px solid var(--rule)}
+.row{
+  display:grid; grid-template-columns:38px 1fr auto 26px; gap:14px; align-items:center;
+  padding:13px 0; border-bottom:1px solid var(--rule-2); transition:background .18s
+}
+.row .who{min-width:0}
+.row .line{display:flex; align-items:baseline; gap:10px}
+.row .name{font-family:var(--serif); font-size:17px; border:0; background:none; padding:1px 0; width:100%; min-width:0; transition:color .2s}
+.row .lead{flex:1; min-width:14px; border-bottom:1px dotted var(--rule); margin-bottom:4px}
+.row .amt{
+  font-family:var(--mono); font-size:15.5px; font-variant-numeric:tabular-nums;
+  border:0; background:none; padding:2px 0; width:9.5ch; text-align:right; transition:color .2s
+}
+.row .meta{display:flex; gap:10px; margin-top:3px; font-family:var(--mono); font-size:11px; color:var(--muted); letter-spacing:.05em}
+.row .meta:empty{display:none}
+.row.done{background:linear-gradient(90deg,var(--settled-soft) 0%,transparent 62%)}
+.row.done .name{color:var(--muted); text-decoration:line-through; text-decoration-thickness:1px; text-decoration-color:var(--rule)}
+.row.done .amt{color:var(--settled)}
+@media (hover:hover){.row:hover{background:var(--card)} .row.done:hover{background:var(--settled-soft)}}
+
+.tick{
+  width:34px; height:34px; padding:0; border:1.5px solid var(--ink); border-radius:5px;
+  background:transparent; display:grid; place-items:center; transition:background .2s, border-color .2s
+}
+.tick svg{width:20px; height:20px}
+.tick path{fill:none; stroke:var(--paper); stroke-width:2.6; stroke-linecap:round; stroke-linejoin:round;
+  stroke-dasharray:26; stroke-dashoffset:26; transition:stroke-dashoffset .3s ease .04s}
+.tick[aria-pressed=true]{background:var(--ink); border-color:var(--ink)}
+.tick[aria-pressed=true] path{stroke-dashoffset:0}
+
+.more{width:26px; height:34px; border:0; background:none; color:var(--muted); font-family:var(--mono); font-size:15px; line-height:1; padding:0}
+.more:hover{color:var(--ink)}
+.details{grid-column:2 / -1; display:none; gap:12px; padding:12px 0 4px; border-top:1px dotted var(--rule); margin-top:10px}
+.row.open .details{display:flex; flex-wrap:wrap; align-items:center}
+.fld{display:flex; flex-direction:column; gap:3px}
+.fld input{font-family:var(--mono); font-size:13px; padding:6px 8px; border:1px solid var(--rule); border-radius:6px; background:var(--card); width:100%}
+.fld.dia input{width:9.5ch}
+.txtbtn{
+  border:0; background:none; padding:6px 2px; font-family:var(--mono); font-size:11px;
+  letter-spacing:.14em; text-transform:uppercase; color:var(--debt); border-bottom:1px solid transparent
+}
+.txtbtn:hover{border-bottom-color:currentColor}
+.addbtn{
+  width:100%; margin-top:14px; padding:12px; border:1px dashed var(--rule); border-radius:var(--r);
+  background:none; font-family:var(--mono); font-size:11px; letter-spacing:.16em;
+  text-transform:uppercase; color:var(--muted); transition:.18s
+}
+.addbtn:hover{border-color:var(--brass); color:var(--brass); background:var(--brass-soft)}
+
+/* ─────────────────────────  resumen / cascada  ───────────────────────── */
+.summary{border-top:1px solid var(--rule)}
+.srow{display:flex; align-items:baseline; gap:12px; padding:10px 0; border-bottom:1px solid var(--rule-2)}
+.srow .k{font-family:var(--serif); font-size:15px}
+.srow .k .sub{font-family:var(--mono); font-size:10.5px; color:var(--muted); letter-spacing:.08em}
+.srow .lead{flex:1; min-width:14px; border-bottom:1px dotted var(--rule); margin-bottom:4px}
+.srow .v{font-family:var(--mono); font-size:15px; font-variant-numeric:tabular-nums}
+.srow.total{border-bottom:1px solid var(--rule); border-top:1px solid var(--rule); margin-top:2px}
+.srow.total .k{color:var(--ink-2)}
+.srow.head{border-bottom:1px solid var(--rule); padding-bottom:13px}
+.srow.head .k{font-size:15px; color:var(--ink-2)}
+.srow.head .v{font-family:var(--serif); font-size:25px; letter-spacing:-.01em}
+
+/* ─────────────────────────  meses / chips  ───────────────────────── */
+.chips{display:flex; gap:8px; overflow-x:auto; padding:2px 0 10px; scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{
+  flex:0 0 auto; padding:7px 13px; border:1px solid var(--rule); border-radius:999px;
+  background:var(--card); font-family:var(--mono); font-size:11.5px; letter-spacing:.09em;
+  color:var(--ink-2); white-space:nowrap; transition:.18s
+}
+.chip[aria-selected=true]{background:var(--ink); border-color:var(--ink); color:var(--paper)}
+.mtools{display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-top:2px}
+.mtools input{font-family:var(--serif); font-style:italic; font-size:15px; padding:6px 9px; border:1px solid var(--rule); border-radius:6px; background:var(--card); flex:1; min-width:130px}
+.iconbtn{
+  border:1px solid var(--rule); background:var(--card); border-radius:999px;
+  width:32px; height:32px; display:grid; place-items:center; color:var(--muted);
+  font-family:var(--mono); font-size:13px; flex:0 0 auto
+}
+.iconbtn:hover{border-color:var(--debt); color:var(--debt)}
+
+/* ─────────────────────────  tarjetas  ───────────────────────── */
+.tcard{background:var(--card); border:1px solid var(--rule); border-radius:var(--r); padding:16px; margin-bottom:14px; box-shadow:var(--shadow)}
+.tcard .top{display:flex; justify-content:space-between; align-items:baseline; gap:12px}
+.tcard .tname{font-family:var(--serif); font-size:19px; border:0; background:none; padding:0; width:100%; min-width:0}
+.tcard .debes{display:flex; align-items:baseline; gap:7px; margin-top:6px}
+.tcard .debes input{
+  font-family:var(--mono); font-size:13px; border:0; background:none; padding:0 0 1px;
+  width:10ch; text-align:right; border-bottom:1px dotted var(--rule); color:var(--ink-2)
+}
+.tcard hr{border:0; border-top:1px solid var(--rule); margin:14px 0}
+.paying{display:flex; justify-content:space-between; align-items:flex-end; gap:14px}
+.qfield{flex:1; min-width:0}
+.qfield input{
+  width:100%; border:0; border-bottom:2px solid var(--ink); background:none; padding:2px 0 4px;
+  font-family:var(--mono); font-size:26px; font-variant-numeric:tabular-nums; letter-spacing:-.01em
+}
+.qfield input::placeholder{color:var(--rule); font-size:15px; letter-spacing:.06em}
+.pago{text-align:right; flex:0 0 auto}
+.pago .v{font-family:var(--mono); font-size:17px; font-variant-numeric:tabular-nums; color:var(--settled)}
+.tprog{margin-top:16px}
+.tprog .bar{height:4px}
+.tprog .bar > i{background:var(--brass)}
+.tprog .cap{display:flex; justify-content:space-between; margin-top:6px}
+.tprog .cap .num{font-size:11px; color:var(--muted)}
+
+/* ─────────────────────────  filas genéricas (subs, categorías, metas)  ───────────────────────── */
+.block{background:var(--card); border:1px solid var(--rule); border-radius:var(--r); padding:14px 16px; margin-bottom:12px; box-shadow:var(--shadow)}
+.block.flat{box-shadow:none; background:transparent; border:0; border-bottom:1px solid var(--rule-2); border-radius:0; padding:13px 0; margin:0}
+.bline{display:flex; align-items:baseline; gap:10px}
+.bline .name{font-family:var(--serif); font-size:17px; border:0; background:none; padding:0; flex:1; min-width:0}
+.bline .v{font-family:var(--mono); font-size:15px; font-variant-numeric:tabular-nums; text-align:right}
+.bline .lead{flex:1; min-width:14px; border-bottom:1px dotted var(--rule); margin-bottom:4px}
+.bmeta{display:flex; align-items:center; gap:10px; margin-top:7px; flex-wrap:wrap}
+.chipmin{
+  border:1px solid var(--rule); background:transparent; border-radius:999px; padding:3px 10px;
+  font-family:var(--mono); font-size:10.5px; letter-spacing:.1em; text-transform:uppercase; color:var(--muted)
+}
+.chipmin[aria-pressed=true]{background:var(--ink); border-color:var(--ink); color:var(--paper)}
+.mini{
+  font-family:var(--mono); font-size:12px; padding:5px 8px; border:1px solid var(--rule);
+  border-radius:6px; background:var(--paper); width:9ch; text-align:right
+}
+.mini.wide{width:11ch}
+.mini.txt{font-family:var(--serif); font-size:14px; width:auto; text-align:left}
+.pbar{height:4px; background:var(--rule-2); border-radius:2px; overflow:hidden; margin-top:10px}
+.pbar > i{display:block; height:100%; width:0; background:var(--brass); transition:width .5s cubic-bezier(.22,1,.36,1)}
+.pbar.over > i{background:var(--debt)}
+.pcap{display:flex; justify-content:space-between; gap:10px; margin-top:6px}
+.pcap .num,.pcap .lbl{font-size:10.5px; color:var(--muted)}
+select{
+  font-family:var(--mono); font-size:13px; padding:7px 8px; border:1px solid var(--rule);
+  border-radius:6px; background:var(--paper); max-width:100%
+}
+.quick{display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-top:12px}
+.quick input{font-family:var(--mono); font-size:14px; padding:8px; border:1px solid var(--rule);
+  border-radius:6px; background:var(--paper); width:10ch; text-align:right}
+.quick select{flex:1; min-width:130px}
+.gol{display:flex; justify-content:space-between; align-items:flex-end; gap:12px; margin-top:12px}
+.gol .aporte{display:flex; gap:6px; align-items:center}
+
+.empty{
+  border:1px dashed var(--rule); border-radius:var(--r); padding:20px; text-align:center;
+  font-family:var(--serif); color:var(--muted); font-size:14.5px
+}
+
+/* ─────────────────────────  detalles / matriz  ───────────────────────── */
+details.mx{border-top:1px solid var(--rule); padding-top:14px}
+details.mx > summary{
+  font-family:var(--mono); font-size:11px; letter-spacing:.2em; text-transform:uppercase;
+  color:var(--muted); cursor:pointer; list-style:none; display:flex; align-items:center; gap:10px
+}
+details.mx > summary::-webkit-details-marker{display:none}
+details.mx > summary::after{content:""; flex:1; height:1px; background:var(--rule)}
+details.mx > summary .caret{transition:transform .2s}
+details.mx[open] > summary .caret{transform:rotate(90deg)}
+.tscroll{overflow-x:auto; margin-top:16px; -webkit-overflow-scrolling:touch}
+table.mx{border-collapse:separate; border-spacing:0; min-width:100%; font-family:var(--mono)}
+table.mx th,table.mx td{padding:8px 10px; text-align:right; white-space:nowrap; border-bottom:1px solid var(--rule-2)}
+table.mx th{font-size:10.5px; letter-spacing:.13em; text-transform:uppercase; color:var(--muted); font-weight:400; border-bottom:1px solid var(--rule)}
+table.mx th:first-child,table.mx td:first-child{
+  text-align:left; position:sticky; left:0; background:var(--paper); z-index:1;
+  box-shadow:1px 0 0 var(--rule-2); padding-left:0; font-family:var(--serif); font-size:14px
+}
+table.mx td{font-size:13.5px; font-variant-numeric:tabular-nums}
+table.mx td .e{display:block; font-size:10.5px; color:var(--muted)}
+table.mx td .q{display:block; color:var(--ink)}
+table.mx td .p{display:block; font-size:11.5px; color:var(--settled); min-height:14px}
+table.mx td.sintoma{color:var(--rule)}
+table.mx tr.tot td{background:var(--card); color:var(--ink-2); font-size:12.5px}
+table.mx tr.tot td:first-child{background:var(--card); letter-spacing:.06em}
+
+/* ─────────────────────────  acciones  ───────────────────────── */
+.actions{display:flex; gap:9px; flex-wrap:wrap}
+.pbtn{
+  padding:9px 15px; border:1px solid var(--rule); border-radius:999px; background:var(--card);
+  font-family:var(--mono); font-size:11px; letter-spacing:.13em; text-transform:uppercase;
+  color:var(--ink-2); transition:.18s
+}
+.pbtn:hover{border-color:var(--brass); color:var(--brass); background:var(--brass-soft)}
+.pbtn.solido{background:var(--ink); border-color:var(--ink); color:var(--paper)}
+.pbtn[disabled]{opacity:.5; cursor:default}
+.note{font-family:var(--serif); font-size:13.5px; color:var(--muted); margin:0 0 14px; max-width:62ch}
+.alert{
+  border:1px solid var(--brass); background:var(--brass-soft); color:var(--ink-2);
+  border-radius:var(--r); padding:13px 15px; margin-bottom:20px; font-family:var(--serif); font-size:14px
+}
+.alert.error{border-color:var(--debt); background:var(--debt-soft); color:var(--debt)}
+.alert .actions{margin-top:11px}
+
+/* ─────────────────────────  login  ───────────────────────── */
+.login{min-height:100svh; display:flex; align-items:center; justify-content:center; padding:24px}
+.login .caja{width:100%; max-width:380px}
+.login .marca{border-bottom:3px double var(--ink); padding-bottom:14px; margin-bottom:26px}
+.login h1{font-family:var(--serif); font-size:27px; margin:6px 0 0; letter-spacing:-.01em}
+.login form{display:flex; flex-direction:column; gap:14px}
+.login input[type=password]{width:100%; padding:12px 13px; border:1px solid var(--rule); border-radius:var(--r); background:var(--card); font-family:var(--mono); font-size:16px}
+.login .pbtn{width:100%; text-align:center; padding:13px}
+.login .error{color:var(--debt); font-family:var(--mono); font-size:12px; min-height:16px}
+
+/* ─────────────────────────  límite de tarjetas  ───────────────────────── */
+.limbox{background:var(--card); border:1px solid var(--rule); border-radius:var(--r); padding:18px; box-shadow:var(--shadow); margin-bottom:14px}
+.limbox .big{font-family:var(--serif); font-size:clamp(30px,8vw,40px); line-height:1.05; letter-spacing:-.015em}
+.pill{display:inline-block; padding:4px 11px; border-radius:999px; font-family:var(--mono); font-size:10.5px; letter-spacing:.1em; text-transform:uppercase; background:var(--rule-2); color:var(--ink-2)}
+.pend{display:flex; align-items:center; gap:11px; padding:11px 0; border-bottom:1px solid var(--rule-2)}
+.pend .chk{width:26px; height:26px; border:1.5px solid var(--ink); border-radius:5px; background:transparent; display:grid; place-items:center; padding:0}
+.pend .chk[aria-pressed=true]{background:var(--ink); border-color:var(--ink); color:var(--paper); font-size:14px}
+.pend .nom{flex:1; min-width:0; font-family:var(--serif); font-size:16.5px}
+.pend.hecho .nom{color:var(--muted); text-decoration:line-through; text-decoration-color:var(--rule)}
+.pend .monto{font-family:var(--mono); font-size:14.5px; font-variant-numeric:tabular-nums}
+
+/* ─────────────────────────  chat  ───────────────────────── */
+.fab{
+  position:fixed; right:16px; bottom:calc(78px + env(safe-area-inset-bottom)); z-index:35;
+  display:flex; align-items:center; gap:7px; padding:11px 17px 11px 15px; border:0; border-radius:999px;
+  background:var(--ink); color:var(--paper); font-family:var(--mono); font-size:11px;
+  letter-spacing:.14em; text-transform:uppercase; box-shadow:0 8px 24px -8px rgba(0,0,0,.5)
+}
+.fab:hover{transform:translateY(-1px)}
+.chat{position:fixed; inset:0; z-index:60; background:var(--paper); display:flex; flex-direction:column}
+@media (min-width:760px){
+  .chat{inset:auto 16px 16px auto; width:440px; height:min(780px,92vh);
+        border:1px solid var(--rule); border-radius:14px; box-shadow:0 24px 70px -24px rgba(0,0,0,.55)}
+}
+.chat-top{display:flex; justify-content:space-between; align-items:center; padding:13px 16px; border-bottom:3px double var(--ink)}
+.chat-top .t{font-family:var(--serif); font-size:17px}
+.chat-log{flex:1; overflow-y:auto; padding:16px; display:flex; flex-direction:column; gap:12px; -webkit-overflow-scrolling:touch}
+.bub{max-width:90%; padding:11px 14px; border-radius:13px; font-size:15px; line-height:1.48; white-space:pre-wrap; word-break:break-word}
+.bub.yo{align-self:flex-end; background:var(--ink); color:var(--paper); border-bottom-right-radius:4px}
+.bub.ia{align-self:flex-start; background:var(--card); border:1px solid var(--rule); border-bottom-left-radius:4px}
+.bub.ia strong{font-weight:600}
+.bub .herramientas{font-family:var(--mono); font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:var(--muted); margin-top:9px}
+.bub .pensando{font-family:var(--mono); font-size:11px; color:var(--muted); letter-spacing:.08em}
+.chat-in{display:flex; gap:8px; padding:12px 16px calc(14px + env(safe-area-inset-bottom)); border-top:1px solid var(--rule)}
+.chat-in input{flex:1; font-family:var(--serif); font-size:16px; padding:11px 12px; border:1px solid var(--rule); border-radius:10px; background:var(--card)}
+.sug{display:flex; flex-wrap:wrap; gap:8px}
+
+/* ─────────────────────────  tabbar  ───────────────────────── */
+.tabbar{position:fixed; left:0; right:0; bottom:0; z-index:30; background:var(--paper);
+  border-top:1px solid var(--rule); padding-bottom:env(safe-area-inset-bottom)}
+.tabbar .wrap{max-width:820px; margin:0 auto; display:flex}
+.tabbar button{
+  flex:1; min-width:0; border:0; background:none; padding:15px 2px 16px;
+  font-family:var(--mono); font-size:10px; letter-spacing:.1em; text-transform:uppercase;
+  color:var(--muted); position:relative; transition:color .2s
+}
+.tabbar button[aria-selected=true]{color:var(--ink)}
+.tabbar button[aria-selected=true]::before{content:""; position:absolute; top:-1px; left:18%; right:18%; height:2px; background:var(--ink)}
+
+@media (max-width:440px){
+  .eyebrow,.lbl{letter-spacing:.1em; font-size:9.5px}
+  .mh-main{gap:10px}
+  .mh-main > div:first-child{min-width:0}
+  .display{font-size:clamp(25px,7.2vw,32px)}
+  .mh-side .num{font-size:13.5px}
+  .mh-month{font-size:14px}
+  .tabbar button{font-size:9px; letter-spacing:.06em}
+}
+@media print{
+  :root{--paper:#fff; --card:#fff; --ink:#000; --ink-2:#333; --muted:#6b6b6b; --rule:#b5b5b5;
+        --rule-2:#ddd; --brass:#555; --brass-soft:#fff; --settled:#186b3a; --settled-soft:#fff;
+        --debt:#a02020; --debt-soft:#fff; --shadow:none}
+  body::before,.tabbar,.addbtn,.actions,.more,.tick,.iconbtn,.mtools,.chips,.sync,.quick,details.mx > summary{display:none}
+  body{background:#fff; padding:0}
+  .masthead{position:static; border-bottom:2px solid #000}
+  main{padding:18px 0 0; max-width:none}
+  section{break-inside:avoid; margin-bottom:22px}
+  .row{grid-template-columns:1fr auto; padding:9px 0}
+  .row .who{grid-column:1} .row .amt{grid-column:2} .row .details{display:none} .row.done{background:none}
+  .bar,.pbar{border:1px solid var(--rule)}
+  .tcard,.block{box-shadow:none; break-inside:avoid}
+  table.mx th:first-child,table.mx td:first-child{background:#fff}
+  .tscroll{overflow:visible} table.mx{min-width:0; font-size:10px}
+}
+</style>
+</head>
+<body>
+
+<div id="app"></div>
+<div id="chat-root"></div>
+
+<script>
+"use strict";
+const $ = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+let state = null, rev = 0, authed = false;
+let sync = "idle", errorMsg = "", conflict = false, exito = "";
+let tab = localStorage.getItem("cofre_tab") || "mes";
+let abiertos = {};
+let mxAbierto = window.innerWidth >= 760;
+let selMes = localStorage.getItem("cofre_selmes") || null;
+let pending = null, timer = null, ocupado = false;
+
+const PESTANAS = [
+  ["mes", "Mes"], ["subs", "Subs"], ["gastos", "Gastos"], ["metas", "Metas"],
+  ["limite", "Límite"], ["tarjetas", "Tarjetas"],
+];
+
+/* ─────────────────────────── red ─────────────────────────── */
+async function api(path, opts = {}) {
+  const r = await fetch(path, {
+    credentials: "same-origin",
+    headers: { "content-type": "application/json", ...(opts.headers || {}) },
+    ...opts,
+  });
+  let data = null;
+  try { data = await r.json(); } catch {}
+  return { status: r.status, data };
+}
+
+async function hidratar() {
+  const { status, data } = await api("/api/state");
+  if (status === 401) { authed = false; sync = "idle"; render(); return; }
+  if (status !== 200) { errorMsg = "No pude leer los datos (" + status + ")"; sync = "error"; render(); return; }
+  authed = true; rev = data.rev; state = data.state; completar();
+  sync = "saved"; errorMsg = ""; conflict = false;
+  render();
+}
+function programarGuardado() {
+  if (exito) { exito = ""; pintarAviso(); }
+  pending = true; sync = "saving"; pintarSync();
+  clearTimeout(timer); timer = setTimeout(guardar, 550);
+}
+async function guardar() {
+  if (!pending || !state) return;
+  try {
+    const { status, data } = await api("/api/state", { method: "PUT", body: JSON.stringify({ rev, state }) });
+    if (status === 200) { rev = data.rev; pending = false; sync = "saved"; errorMsg = ""; conflict = false; }
+    else if (status === 409) { pending = false; conflict = true; sync = "conflict"; errorMsg = "Otro dispositivo cambió los datos mientras editabas."; }
+    else if (status === 401) { pending = false; authed = false; render(); return; }
+    else { sync = "error"; errorMsg = "No pude guardar (" + status + "). Se reintenta al próximo cambio."; }
+  } catch {
+    sync = "offline"; errorMsg = "Sin conexión. Los cambios se reintentan al próximo movimiento.";
+  }
+  pintarSync(); pintarAviso();
+}
+window.addEventListener("pagehide", () => {
+  if (pending && state)
+    fetch("/api/state", { method: "PUT", credentials: "same-origin", keepalive: true,
+      headers: { "content-type": "application/json" }, body: JSON.stringify({ rev, state }) });
+});
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") refrescar(); });
+setInterval(refrescar, 45000);
+async function refrescar() {
+  if (!authed || pending || ocupado || document.activeElement?.matches("input,select")) return;
+  const { status, data } = await api("/api/state");
+  if (status !== 200 || data.rev === rev) return;
+  rev = data.rev; state = data.state; conflict = false; sync = "saved"; pintarSync(); render();
+}
+
+/* ─────────────────────────── cálculo ─────────────────────────── */
+function calcGastos() {
+  let total = 0, pagado = 0, nPag = 0, nPen = 0;
+  for (const g of state.gastos) {
+    const m = Number(g.monto) || 0; total += m;
+    if (g.pagado) { pagado += m; nPag++; } else nPen++;
+  }
+  return { total, pagado, pendiente: total - pagado, nPag, nPen,
+           disponible: (Number(state.ingreso) || 0) - total };
+}
+const asGTQ = s => s.moneda === "USD" ? (Number(s.monto) || 0) * (Number(state.usdGtq) || 0) : (Number(s.monto) || 0);
+function calcSuscripciones() {
+  const activas = state.suscripciones.filter(s => s.activa);
+  return { total: activas.reduce((a, s) => a + asGTQ(s), 0), activas: activas.length,
+           pausadas: state.suscripciones.length - activas.length };
+}
+function calcCategorias() {
+  const delMes = state.consumos.filter(g => g.mes === state.mes);
+  const filas = state.categorias.map(c => {
+    const gastado = delMes.filter(g => g.categoriaId === c.id).reduce((a, g) => a + (Number(g.monto) || 0), 0);
+    const p = Number(c.presupuesto) || 0;
+    return { id: c.id, nombre: c.nombre, presupuesto: p, gastado, restante: p - gastado,
+             medio: c.medio === "efectivo" ? "efectivo" : "tarjeta",
+             pct: p > 0 ? Math.min(1.6, gastado / p) : (gastado > 0 ? 1.6 : 0) };
+  });
+  return { filas, presupuestado: filas.reduce((a, f) => a + f.presupuesto, 0),
+           gastado: filas.reduce((a, f) => a + f.gastado, 0), delMes };
+}
+function calcMetas() {
+  const filas = state.metas.map(m => {
+    const ahorrado = (Number(m.inicial) || 0) + state.aportes.filter(a => a.metaId === m.id)
+      .reduce((a, x) => a + (Number(x.monto) || 0), 0);
+    const objetivo = Number(m.objetivo) || 0;
+    const faltante = Math.max(0, objetivo - ahorrado);
+    const aporte = Number(m.aporteMensual) || 0;
+    return { id: m.id, nombre: m.nombre, objetivo, ahorrado, faltante, aporte,
+             meses: aporte > 0 ? Math.ceil(faltante / aporte) : null,
+             pct: objetivo > 0 ? Math.min(1, ahorrado / objetivo) : 0 };
+  });
+  return { filas, mensual: filas.reduce((a, f) => a + f.aporte, 0),
+           ahorrado: filas.reduce((a, f) => a + f.ahorrado, 0) };
+}
+function calcTarjetas() {
+  const perCard = new Map(), totQ = {}, totP = {};
+  let actual = 0, saldoTotal = 0;
+  for (const t of state.tarjetas) {
+    /* El 'entra' de cada mes viene del mes anterior: un mes nunca reescribe a otro. */
+    const pagos = {}, entradas = {};
+    let anterior = Number(t.saldo) || 0;
+    for (const m of state.meses) {
+      entradas[m.id] = anterior;
+      const q = t.quedas[m.id];
+      if (q === undefined || q === null) continue;
+      pagos[m.id] = anterior - q; anterior = q;
+      totP[m.id] = (totP[m.id] || 0) + pagos[m.id];
+    }
+    for (const m of state.meses) {
+      const q = t.quedas[m.id];
+      if (q !== undefined && q !== null) totQ[m.id] = (totQ[m.id] || 0) + q;
+    }
+    perCard.set(t.id, { pagos, entradas, actual: anterior });
+    actual += anterior; saldoTotal += Number(t.saldo) || 0;
+  }
+  return { perCard, totQ, totP, actual, saldoTotal };
+}
+const esTarjeta = x => x.medio === "tarjeta";
+const suma = (arr, f = x => Number(x.monto) || 0) => arr.reduce((a, x) => a + f(x), 0);
+function cascada() {
+  const g = calcGastos(), s = calcSuscripciones(), c = calcCategorias(), m = calcMetas();
+  const T = calcTarjetas();
+  /* Lo que cargas a la tarjeta no sale del efectivo de este mes: se paga el mes que viene. */
+  const fijosEfectivo = suma(state.gastos.filter(x => !esTarjeta(x)));
+  const fijosTarjeta = suma(state.gastos.filter(esTarjeta));
+  const subsActivas = state.suscripciones.filter(x => x.activa);
+  const subsEfectivo = suma(subsActivas.filter(x => !esTarjeta(x)), asGTQ);
+  const subsTarjeta = suma(subsActivas.filter(esTarjeta), asGTQ);
+
+  const disponible = (Number(state.ingreso) || 0) + state.saldoInicial - fijosEfectivo - subsEfectivo;
+  const libre = disponible - c.presupuestado - m.mensual;
+  const mes = state.meses.find(x => x.label === state.mes);
+  const pagadoTarjetas = mes ? (T.totP[mes.id] || 0) : 0;
+  const quedaTarjetas = libre - pagadoTarjetas;
+
+  const consumosMes = state.consumos.filter(x => x.mes === state.mes);
+  const medioDeCategoria = id => {
+    const c = state.categorias.find(x => x.id === id);
+    return c && c.medio === "tarjeta" ? "tarjeta" : "efectivo";
+  };
+  const consumosTarjeta = suma(consumosMes.filter(g => medioDeCategoria(g.categoriaId) === "tarjeta"));
+  const previstosMes = state.previstos.filter(x => x.mes === state.mes);
+  const previstoTotal = suma(previstosMes);
+
+  const cargadoTarjeta = fijosTarjeta + subsTarjeta + consumosTarjeta;
+  const deudaProxima = T.actual + cargadoTarjeta + previstoTotal;
+  const margenTarjeta = (Number(state.ingresoProximo) || 0) - deudaProxima - fijosEfectivo
+    - c.presupuestado - m.mensual;
+  const topeGuardado = state.limites.find(l => l.mes === state.mes);
+  const tope = topeGuardado ? (Number(topeGuardado.limite) || 0) : null;
+  const puedesGastar = tope === null ? margenTarjeta : Math.min(margenTarjeta, tope);
+
+  return { g, s, c, m, T, disponible, libre, pagadoTarjetas, quedaTarjetas,
+           fijosEfectivo, fijosTarjeta, subsEfectivo, subsTarjeta, consumosTarjeta,
+           cargadoTarjeta, deudaProxima, margenTarjeta, tope, puedesGastar,
+           previstosMes, previstoTotal, limite: puedesGastar, limiteFijado: tope !== null,
+           limiteSugerido: margenTarjeta, sinGastar: c.presupuestado - c.gastado };
+}
+function mesSel() {
+  const m = state.meses.find(x => x.id === selMes);
+  if (m) return m;
+  let ultimo = null;
+  for (const t of state.tarjetas) for (const mm of state.meses) if (t.quedas[mm.id] !== undefined) ultimo = mm;
+  return ultimo || state.meses[0] || { id: "", label: "—" };
+}
+const nuevoId = () => Math.random().toString(36).slice(2, 11);
+/* El mes donde arranca el historial: ahí, y solo ahí, se edita el saldo de partida. */
+function mesBase() {
+  for (const m of state.meses)
+    if (state.tarjetas.some(t => t.quedas[m.id] !== undefined)) return m;
+  return state.meses[0];
+}
+function completar() {
+  state.saldoInicial = Number(state.saldoInicial) || 0;
+  state.limites ||= [];
+  state.previstos ||= [];
+}
+function setLimite(monto) {
+  const i = state.limites.findIndex(l => l.mes === state.mes);
+  if (i >= 0) state.limites[i].limite = Number(monto) || 0;
+  else state.limites.push({ mes: state.mes, limite: Number(monto) || 0 });
+}
+
+/* ─────────────────────────── formato ─────────────────────────── */
+function fmt(n, moneda = "GTQ") {
+  if (n === null || n === undefined || n === "") return "";
+  const v = Number(n); if (isNaN(v)) return "";
+  const [i, d] = Math.abs(v).toFixed(2).split(".");
+  const signo = v < 0 ? "−" : "";
+  const g = i.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  return moneda === "USD" ? `${signo}$` + g + "." + d : `${signo}Q` + g + "." + d;
+}
+function fmtRaw(n, dec = 2) {
+  if (n === null || n === undefined || n === "") return "";
+  const v = Number(n); if (isNaN(v)) return "";
+  const [i, d] = Math.abs(v).toFixed(dec).split(".");
+  return (v < 0 ? "-" : "") + i.replace(/\B(?=(\d{3})+(?!\d))/g, ",") + "." + d;
+}
+function parsear(v) {
+  const s = String(v).replace(/[^0-9.,-]/g, "").replace(/,/g, "");
+  if (s === "" || s === "-") return null;
+  const n = parseFloat(s); return isNaN(n) ? null : n;
+}
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const NUM = 'data-num inputmode="decimal" spellcheck="false" autocomplete="off"';
+const TICK = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.6 9.8 17.4 19 6.8"/></svg>`;
+const mesCorto = l => (l || "").split(" ")[0];
+const menos = v => (Number(v) || 0) > 0 ? "\u2212" + fmt(v) : fmt(0);
+
+/* ─────────────────────────── vistas ─────────────────────────── */
+function viewLogin(mensaje = "") {
+  document.body.style.paddingBottom = "0";
+  return `<div class="login"><div class="caja">
+    <div class="marca"><span class="eyebrow">Cofre</span><h1>Entra con tu contraseña</h1></div>
+    <form data-login>
+      <input type="password" name="password" placeholder="Contraseña" autocomplete="current-password" autofocus>
+      <div class="error">${esc(mensaje)}</div>
+      <button class="pbtn solido" type="submit">Entrar</button>
+    </form>
+  </div></div>`;
+}
+
+/* ── pestaña MES ── */
+function viewMes() {
+  const c = cascada();
+  const filas = state.gastos.map(x => {
+    const meta = [x.dia && "día " + x.dia, x.medio === "tarjeta" && "tarjeta",
+                  x.nota].filter(Boolean).join("  ·  ");
+    return `<div class="row${x.pagado ? " done" : ""}${abiertos[x.id] ? " open" : ""}" data-row="${x.id}">
+      <button class="tick" data-pagado="${x.id}" aria-pressed="${x.pagado}"
+              aria-label="${x.pagado ? "Desmarcar" : "Marcar"} ${esc(x.nombre)}">${TICK}</button>
+      <div class="who">
+        <div class="line">
+          <input class="name" value="${esc(x.nombre)}" data-gasto="${x.id}" data-field="nombre"
+                 spellcheck="false" autocomplete="off" aria-label="Concepto">
+          <span class="lead"></span>
+        </div>
+        <div class="meta">${esc(meta)}</div>
+      </div>
+      <input class="amt num" ${NUM} value="${fmtRaw(x.monto)}" data-gasto="${x.id}" data-field="monto"
+             aria-label="Monto de ${esc(x.nombre)}">
+      <button class="more" data-open="${x.id}" aria-expanded="${!!abiertos[x.id]}"
+              aria-label="Detalles de ${esc(x.nombre)}">${abiertos[x.id] ? "▴" : "⋯"}</button>
+      <div class="details">
+        <label class="fld dia"><span class="lbl">Día de pago</span>
+          <input value="${esc(x.dia)}" data-gasto="${x.id}" data-field="dia" placeholder="ej. 15"
+                 spellcheck="false" autocomplete="off"></label>
+        <label class="fld" style="flex:1; min-width:140px"><span class="lbl">Nota</span>
+          <input value="${esc(x.nota)}" data-gasto="${x.id}" data-field="nota" placeholder="opcional"
+                 spellcheck="false" autocomplete="off"></label>
+        <div class="fld"><span class="lbl">Medio de pago</span>
+          <div style="display:flex; gap:6px">
+            <button class="chipmin" data-medio="${x.id}" data-valor="efectivo"
+                    aria-pressed="${x.medio !== "tarjeta"}">Efectivo</button>
+            <button class="chipmin" data-medio="${x.id}" data-valor="tarjeta"
+                    aria-pressed="${x.medio === "tarjeta"}">Tarjeta</button>
+          </div>
+        </div>
+        <button class="txtbtn" data-del-gasto="${x.id}">Eliminar</button>
+      </div>
+    </div>`;
+  }).join("");
+
+  return `
+  <section data-anim>
+    <div class="h-sec">El mes</div>
+    <div class="ledger" style="border-top:0">
+      <div class="srow"><span class="k">Mes en curso</span><span class="lead"></span>
+        <input class="v" style="border:0;background:none;text-align:right;width:11ch"
+               value="${esc(state.mes)}" data-meta="mes" spellcheck="false" autocomplete="off" aria-label="Mes"></div>
+      <div class="srow"><span class="k">Ingreso del mes</span><span class="lead"></span>
+        <input class="v num" ${NUM} style="border:0;background:none;text-align:right;width:11ch"
+               value="${fmtRaw(state.ingreso)}" data-meta="ingreso" aria-label="Ingreso del mes"></div>
+      <div class="srow"><span class="k">Arrastre del mes anterior <span class="sub">efectivo + fijos ya adelantados</span></span>
+        <span class="lead"></span>
+        <input class="v num" ${NUM} style="border:0;background:none;text-align:right;width:11ch"
+               value="${fmtRaw(state.saldoInicial)}" data-meta="saldoInicial" aria-label="Saldo inicial del mes"></div>
+    </div>
+  </section>
+
+  <section data-anim style="--d:.05s">
+    <div class="h-sec">Cascada del mes</div>
+    <div class="summary">
+      <div class="srow"><span class="k">Ingreso</span><span class="lead"></span>
+        <span class="v num" data-out="ingreso">—</span></div>
+      <div class="srow"><span class="k">Saldo inicial del mes</span><span class="lead"></span>
+        <span class="v num" data-out="saldo-inicial">—</span></div>
+      <div class="srow"><span class="k">Gastos fijos <span class="sub">en efectivo</span></span><span class="lead"></span>
+        <span class="v num" data-out="neg-fijos">—</span></div>
+      <div class="srow"><span class="k">Suscripciones <span class="sub">en efectivo · <span data-out="subs-nota">—</span></span></span>
+        <span class="lead"></span><span class="v num" data-out="neg-subs">—</span></div>
+      <div class="srow total"><span class="k">Disponible del mes</span><span class="lead"></span>
+        <span class="v num" data-out="disponible">—</span></div>
+      <div class="srow"><span class="k">Presupuestos por categoría</span><span class="lead"></span>
+        <span class="v num" data-out="neg-presup">—</span></div>
+      <div class="srow"><span class="k">Aportes a metas</span><span class="lead"></span>
+        <span class="v num" data-out="neg-metas">—</span></div>
+      <div class="srow total"><span class="k">Libre para asignar</span><span class="lead"></span>
+        <span class="v num" data-out="libre">—</span></div>
+      <div class="srow"><span class="k">Ya pagado a tarjetas <span class="sub" data-out="nota-pagado-tarjetas">—</span></span>
+        <span class="lead"></span><span class="v num" data-out="neg-pagado-tarjetas">—</span></div>
+      <div class="srow head"><span class="k" data-out="etiqueta-final">Te queda para tarjetas</span>
+        <span class="lead"></span><span class="v num" data-out="queda-tarjetas">—</span></div>
+    </div>
+    <p class="note" style="margin-top:12px">Además, <b data-out="cargado-tarjeta">—</b> se van a la tarjeta
+      este mes: eso no sale del efectivo de aquí arriba, se paga el mes que viene.</p>
+    <p class="note" style="margin-top:8px">Lo presupuestado es dinero apartado, no gastado:
+      de los <b data-out="presupuesto-txt">—</b> presupuestados llevas gastados
+      <b data-out="gastado-txt">—</b>. Si no lo gastas, se suma a lo libre.</p>
+  </section>
+
+  <section data-anim style="--d:.1s">
+    <div class="h-sec">Gastos fijos — <span data-out="fijos-nota">—</span></div>
+    <div class="ledger">${filas}</div>
+    <button class="addbtn" data-add="gasto">+ Agregar gasto fijo</button>
+    <div class="actions" style="margin-top:14px">
+      <button class="pbtn" data-medio-todos="tarjeta">Poner todos en tarjeta</button>
+      <button class="pbtn" data-medio-todos="efectivo">Poner todos en efectivo</button>
+    </div>
+  </section>
+
+  <section data-anim style="--d:.15s">
+    <div class="h-sec">Tarjetas</div>
+    <div class="summary">
+      <div class="srow"><span class="k">Deuda total</span><span class="lead"></span>
+        <span class="v num" data-out="deuda-hoy">—</span></div>
+      <div class="srow"><span class="k">Con lo libre de cada mes</span><span class="lead"></span>
+        <span class="v num" data-out="proyeccion">—</span></div>
+    </div>
+  </section>
+
+  <section data-anim style="--d:.2s">
+    <div class="h-sec">Cierre de mes</div>
+    <p class="note">Tu ciclo: a fin de mes pagas la <b>tarjeta</b> (que son los gastos de ese mes) y
+      pagas los <b>gastos fijos del mes siguiente</b>. Por eso, al cerrar ${esc(state.mes)}, los fijos
+      que ya marcaste pasan al mes nuevo <b>también marcados</b>: los pagaste adelantados.
+      ${esc(state.mes)} queda en el historial con lo que sí fue suyo — su ingreso, sus pagos de tarjeta
+      y su gasto variable.</p>
+    <div class="actions">
+      <button class="pbtn solido" data-action="cerrar-mes" data-conservar="1">Cerrar ${esc(state.mes)} y pasar a ${esc(siguienteMes(state.mes) || "el siguiente")}</button>
+      <button class="pbtn" data-action="cerrar-mes" data-conservar="0">Cerrar y dejar los fijos sin marcar</button>
+    </div>
+    ${(state.cerrados || []).length ? `
+    <div class="summary" style="margin-top:18px">
+      <div class="h-sec" style="margin-bottom:10px">Historial</div>
+      ${state.cerrados.map(c => `
+      <div class="srow">
+        <span class="k">${esc(c.mes)}</span>
+        <span class="lead"></span>
+        <span class="num small" data-hist="${esc(c.mes)}">ingreso ${fmt(c.resumen.ingreso)} · fijos ${fmt(c.resumen.fijos)} · tarjetas ${fmt(c.resumen.pagadoTarjetas)} · deuda ${fmt(c.resumen.deudaFinal)}</span>
+      </div>`).join("")}
+    </div>` : ""}
+  </section>
+
+  <section data-anim style="--d:.25s">
+    <div class="h-sec">Datos</div>
+    <p class="note">Todo se guarda en la base del servidor: lo que anotes aquí lo ves igual en el
+      teléfono. El respaldo es un archivo por si quieres tus datos fuera del servidor.</p>
+    <div class="actions">
+      <button class="pbtn" data-action="export">Descargar respaldo</button>
+      <button class="pbtn" data-action="import">Restaurar</button>
+      <button class="pbtn" data-action="print">Imprimir</button>
+      <button class="pbtn" data-action="logout">Salir</button>
+    </div>
+    <input type="file" id="file-import" accept="application/json" hidden>
+  </section>`;
+}
+
+/* ── pestaña SUSCRIPCIONES ── */
+function viewSubs() {
+  const s = calcSuscripciones();
+  const lista = state.suscripciones.map(x => `
+    <div class="block flat">
+      <div class="bline">
+        <input class="name" value="${esc(x.nombre)}" data-sub="${x.id}" data-field="nombre"
+               spellcheck="false" autocomplete="off" aria-label="Nombre de la suscripción">
+        <input class="mini wide num" ${NUM} value="${fmtRaw(x.monto)}"
+               data-sub="${x.id}" data-field="monto" aria-label="Monto">
+        <button class="iconbtn" data-del-sub="${x.id}" aria-label="Eliminar">✕</button>
+      </div>
+      <div class="bmeta">
+        <button class="chipmin" data-moneda="${x.id}" aria-pressed="${x.moneda === "USD"}">${x.moneda}</button>
+        <span class="lbl">cobra el</span>
+        <input class="mini txt" style="width:5ch" value="${esc(x.dia)}" data-sub="${x.id}" data-field="dia"
+               placeholder="—" aria-label="Día del cobro">
+        <button class="chipmin" data-activa="${x.id}" aria-pressed="${x.activa}">${x.activa ? "activa" : "pausada"}</button>
+        <button class="chipmin" data-medio-sub="${x.id}"
+                aria-pressed="${x.medio === "tarjeta"}">${x.medio === "tarjeta" ? "tarjeta" : "efectivo"}</button>
+        <span class="lead" style="flex:1; border-bottom:1px dotted var(--rule); margin-bottom:4px"></span>
+        <span class="num small" data-out="sub-gtq:${x.id}">—</span>
+      </div>
+    </div>`).join("");
+
+  return `
+  <section data-anim>
+    <div class="h-sec">Suscripciones del mes</div>
+    <div class="summary">
+      <div class="srow"><span class="k">Total activo</span><span class="lead"></span>
+        <span class="v num" data-out="subs-total">—</span></div>
+      <div class="srow"><span class="k">Activas <span class="sub" data-out="subs-conteo">—</span></span>
+        <span class="lead"></span><span class="v num" data-out="subs-pausadas">—</span></div>
+      <div class="srow"><span class="k">Tipo de cambio</span><span class="lead"></span>
+        <span class="v">
+          <span class="lbl">1 USD =</span>
+          <input class="mini wide num" ${NUM} data-dec="4" value="${fmtRaw(state.usdGtq, 4)}" data-meta="usdGtq"
+                 aria-label="Quetzales por dólar">
+          <span class="lbl">GTQ</span>
+        </span></div>
+    </div>
+    <div class="actions" style="margin-top:12px">
+      <button class="pbtn" data-action="tasa">Traer el tipo de cambio actual</button>
+    </div>
+  </section>
+
+  <section data-anim style="--d:.07s">
+    <div class="h-sec">Cobros recurrentes</div>
+    ${state.suscripciones.length ? lista :
+      `<div class="empty">Aún no tienes suscripciones.<br>
+        Agrega las que se te cobran cada mes, en quetzales o en dólares.</div>`}
+    <button class="addbtn" data-add="sub">+ Agregar suscripción</button>
+  </section>`;
+}
+
+/* ── pestaña GASTOS (categorías y consumo) ── */
+function viewGastos() {
+  const c = calcCategorias();
+  const filas = c.filas.map(f => `
+    <div class="block">
+      <div class="bline">
+        <input class="name" value="${esc(f.nombre)}" data-cat="${f.id}" data-field="nombre"
+               spellcheck="false" autocomplete="off" aria-label="Categoría">
+        <button class="chipmin" data-medio-cat="${f.id}" aria-pressed="${f.medio === "tarjeta"}"
+                aria-label="Pago en ${f.medio}">${f.medio}</button>
+        <input class="mini wide num" ${NUM} value="${fmtRaw(f.presupuesto)}"
+               data-cat="${f.id}" data-field="presupuesto" aria-label="Presupuesto de ${esc(f.nombre)}">
+        <button class="iconbtn" data-del-cat="${f.id}" aria-label="Eliminar categoría">✕</button>
+      </div>
+      <div class="pbar${f.gastado > f.presupuesto ? " over" : ""}"><i data-out-bar="cat:${f.id}"></i></div>
+      <div class="pcap">
+        <span class="lbl" data-out="cat-txt:${f.id}">—</span>
+        <span class="num" data-out="cat-rest:${f.id}">—</span>
+      </div>
+    </div>`).join("");
+
+  const opciones = state.categorias.map(x => `<option value="${x.id}">${esc(x.nombre)}</option>`).join("");
+  const consumos = c.delMes.slice(0, 12).map(g => {
+    const cat = state.categorias.find(x => x.id === g.categoriaId);
+    return `<div class="bline" style="padding:9px 0; border-bottom:1px solid var(--rule-2)">
+      <span class="num small" style="width:9ch">${esc((g.fecha || "").slice(5))}</span>
+      <span style="flex:1; min-width:0">${esc(cat ? cat.nombre : "—")}
+        ${g.nota ? `<span class="small"> · ${esc(g.nota)}</span>` : ""}</span>
+      <span class="num small">${cat?.medio === "efectivo" ? "efectivo" : "tarjeta"}</span>
+      <span class="v num" style="width:8ch">${fmt(g.monto)}</span>
+      <button class="iconbtn" data-del-consumo="${g.id}" aria-label="Borrar">✕</button>
+    </div>`;
+  }).join("");
+
+  return `
+  <section data-anim>
+    <div class="h-sec">Presupuesto del mes — ${esc(state.mes)}</div>
+    <div class="summary">
+      <div class="srow"><span class="k">Presupuestado</span><span class="lead"></span>
+        <span class="v num" data-out="presupuesto">—</span></div>
+      <div class="srow"><span class="k">Gastado</span><span class="lead"></span>
+        <span class="v num debt" data-out="gastado">—</span></div>
+      <div class="srow head"><span class="k">Te queda por gastar</span><span class="lead"></span>
+        <span class="v num settled" data-out="por-gastar">—</span></div>
+    </div>
+  </section>
+
+  <section data-anim style="--d:.06s">
+    <div class="h-sec">Registrar un gasto</div>
+    <div class="quick">
+      <select data-consumo-cat aria-label="Categoría">${opciones}</select>
+      <input class="num" ${NUM} placeholder="0.00" data-consumo-monto aria-label="Monto">
+      <input class="mini txt" style="width:12ch" placeholder="nota" data-consumo-nota aria-label="Nota">
+      <button class="pbtn solido" data-consumo-add="1">Anotar</button>
+    </div>
+    <p class="note" style="margin-top:10px">Cada gasto que anotes aquí descuenta del presupuesto de
+      su categoría, y toma el medio de pago de la categoría (tarjeta o efectivo). Si cambias el medio
+      de una categoría, se reclasifican todos sus gastos de una vez.</p>
+  </section>
+
+  <section data-anim style="--d:.12s">
+    <div class="h-sec">Categorías</div>
+    ${state.categorias.length ? filas :
+      `<div class="empty">Sin categorías todavía.</div>`}
+    <button class="addbtn" data-add="cat">+ Agregar categoría</button>
+  </section>
+
+  <section data-anim style="--d:.18s">
+    <div class="h-sec">Anotado en ${esc(mesCorto(state.mes))}</div>
+    ${c.delMes.length ? consumos :
+      `<div class="empty">Nada anotado este mes.</div>`}
+  </section>`;
+}
+
+/* ── pestaña METAS ── */
+function viewMetas() {
+  const m = calcMetas();
+  const bloques = m.filas.map(f => `
+    <article class="tcard">
+      <div class="top">
+        <input class="tname" value="${esc(f.nombre)}" data-meta-id="${f.id}" data-field="nombre"
+               spellcheck="false" autocomplete="off" aria-label="Nombre de la meta">
+        <button class="iconbtn" data-del-meta="${f.id}" aria-label="Eliminar meta">✕</button>
+      </div>
+      <div class="debes">
+        <span class="lbl">Ahorrado</span>
+        <span class="num" data-out="meta-ahorrado:${f.id}">—</span>
+        <span class="lbl">de</span>
+        <span class="num" data-out="meta-objetivo:${f.id}">—</span>
+      </div>
+      <div class="tprog">
+        <div class="bar"><i data-out-bar="meta:${f.id}"></i></div>
+        <div class="cap">
+          <span class="num" data-out="meta-pct:${f.id}">—</span>
+          <span class="num" data-out="meta-eta:${f.id}">—</span>
+        </div>
+      </div>
+      <hr>
+      <div class="gol">
+        <div>
+          <div class="lbl">Aporte mensual</div>
+          <input class="mini wide num" ${NUM} value="${fmtRaw(f.aporte)}"
+                 data-meta-id="${f.id}" data-field="aporteMensual" aria-label="Aporte mensual">
+        </div>
+        <div class="aporte">
+          <input class="mini wide num" ${NUM} placeholder="0.00" data-aporte-monto="${f.id}"
+                 aria-label="Aportar ahora">
+          <button class="pbtn" data-aportar="${f.id}">Aportar</button>
+        </div>
+      </div>
+    </article>`).join("");
+
+  return `
+  <section data-anim>
+    <div class="h-sec">Tus metas de ahorro</div>
+    <div class="summary">
+      <div class="srow"><span class="k">Aportas cada mes</span><span class="lead"></span>
+        <span class="v num" data-out="metas-mensual">—</span></div>
+      <div class="srow"><span class="k">Ahorrado en total</span><span class="lead"></span>
+        <span class="v num settled" data-out="metas-ahorrado">—</span></div>
+      <div class="srow"><span class="k">Falta para todas</span><span class="lead"></span>
+        <span class="v num" data-out="metas-falta">—</span></div>
+    </div>
+    <p class="note" style="margin-top:12px">Lo que aportas a metas sale del disponible del mes, igual
+      que los presupuestos. Es dinero que separas antes de decidir cuánto va a las tarjetas.</p>
+  </section>
+
+  <section data-anim style="--d:.06s">
+    ${state.metas.length ? bloques :
+      `<div class="empty">Aún no tienes metas.<br>Un fondo de emergencia es buen primer objetivo.</div>`}
+    <button class="addbtn" data-add="meta">+ Crear meta</button>
+  </section>`;
+}
+
+/* ── pestaña TARJETAS ── */
+function viewTarjetas() {
+  const sel = mesSel(), T = calcTarjetas(), c = cascada();
+  const chips = state.meses.map(x => `
+    <button class="chip" role="tab" aria-selected="${x.id === sel.id}" data-selmes="${x.id}">${esc(x.label)}</button>`).join("");
+
+  const base = mesBase();
+  const esBase = base ? sel.id === base.id : false;
+  const idxSel = state.meses.findIndex(m => m.id === sel.id);
+  const mesAnterior = idxSel > 0 ? state.meses[idxSel - 1] : null;
+  const bloques = state.tarjetas.map(t => {
+    const r = T.perCard.get(t.id);
+    const q = t.quedas[sel.id];
+    const saldo = Number(t.saldo) || 0;
+    const pct = saldo > 0 ? Math.max(0, Math.min(1, (saldo - r.actual) / saldo)) : 0;
+    return `<article class="tcard">
+      <div class="top">
+        <input class="tname" value="${esc(t.nombre)}" data-tarjeta="${t.id}" data-field="nombre"
+               spellcheck="false" autocomplete="off" aria-label="Nombre de la tarjeta">
+        <button class="iconbtn" data-del-tarjeta="${t.id}" aria-label="Eliminar tarjeta">✕</button>
+      </div>
+      ${esBase ? `
+      <div class="debes">
+        <span class="lbl">Saldo con el que arranca el historial</span>
+        <input class="num" ${NUM} value="${fmtRaw(t.saldo)}" data-tarjeta="${t.id}" data-field="saldo"
+               aria-label="Saldo inicial de ${esc(t.nombre)}">
+      </div>` : `
+      <div class="debes">
+        <span class="lbl">Entra con</span>
+        <span class="num" data-out="entra:${t.id}">—</span>
+        <span class="lbl">· es lo que quedó en ${esc(mesAnterior ? mesAnterior.label : "—")}</span>
+      </div>`}
+      <hr>
+      <div class="paying">
+        <div class="qfield">
+          <div class="lbl">Queda en ${esc(sel.label)}</div>
+          <input class="num" ${NUM} placeholder="0.00" value="${q === undefined ? "" : fmtRaw(q)}"
+                 data-queda="${t.id}" data-mes="${sel.id}" aria-label="Queda en ${esc(t.nombre)}">
+        </div>
+        <div class="pago"><div class="lbl">Pago del mes</div>
+          <div class="v" data-out="pago:${t.id}:${sel.id}">—</div></div>
+      </div>
+      <div class="tprog">
+        <div class="bar"><i data-out-bar="card:${t.id}"></i></div>
+        <div class="cap"><span class="num" data-out="pct:${t.id}">—</span>
+          <span class="num" data-out="resto:${t.id}">—</span></div>
+      </div>
+    </article>`;
+  }).join("");
+
+  const ths = state.meses.map(x => `<th>${esc(x.label)}</th>`).join("");
+  const filas = state.tarjetas.map(t => {
+    const celdas = state.meses.map(m => {
+      const tiene = t.quedas[m.id] !== undefined;
+      return `<td class="${tiene ? "" : "sintoma"}">
+        <span class="e" data-out="mxe:${t.id}:${m.id}"></span>
+        <span class="q" data-out="mxq:${t.id}:${m.id}">—</span>
+        <span class="p" data-out="pago:${t.id}:${m.id}"></span></td>`;
+    }).join("");
+    return `<tr><td>${esc(t.nombre)}</td>${celdas}</tr>`;
+  }).join("");
+  const totQ = state.meses.map(x => `<td data-out="tq:${x.id}">—</td>`).join("");
+  const totP = state.meses.map(x => `<td data-out="tp:${x.id}">—</td>`).join("");
+
+  return `
+  <section data-anim>
+    <div class="h-sec">Mes que estás anotando</div>
+    <div class="chips" role="tablist">${chips}</div>
+    <div class="mtools">
+      <input value="${esc(sel.label)}" data-label-mes="${sel.id}" spellcheck="false"
+             autocomplete="off" aria-label="Nombre del mes">
+      <button class="iconbtn" data-add="mes" aria-label="Agregar mes">+</button>
+      <button class="iconbtn" data-del-mes="${sel.id}" aria-label="Eliminar mes">✕</button>
+    </div>
+  </section>
+
+  <section data-anim style="--d:.05s">
+    <div class="h-sec">Cómo vas</div>
+    <div class="summary">
+      <div class="srow"><span class="k">Deuda total</span><span class="lead"></span>
+        <span class="v num" data-out="deuda-hoy">—</span></div>
+      <div class="srow"><span class="k">Libre para asignar</span><span class="lead"></span>
+        <span class="v num" data-out="libre">—</span></div>
+      <div class="srow"><span class="k">Ya pagado este mes</span><span class="lead"></span>
+        <span class="v num" data-out="neg-pagado-tarjetas">—</span></div>
+      <div class="srow head"><span class="k">Te queda</span><span class="lead"></span>
+        <span class="v num" data-out="queda-tarjetas">—</span></div>
+      <div class="srow"><span class="k">Liquidarla te tomaría</span><span class="lead"></span>
+        <span class="v num" data-out="meses-deuda">—</span></div>
+    </div>
+  </section>
+
+  <section data-anim style="--d:.1s">
+    <div class="h-sec">Tarjetas — ${esc(sel.label)}</div>
+    ${bloques}
+    <button class="addbtn" data-add="tarjeta">+ Agregar tarjeta</button>
+  </section>
+
+  <section data-anim style="--d:.15s">
+    <details class="mx" ${mxAbierto ? "open" : ""}>
+      <summary><span class="caret">▸</span> Todos los meses</summary>
+      <div class="tscroll">
+        <table class="mx">
+          <thead><tr><th>Tarjeta</th>${ths}</tr></thead>
+          <tbody>${filas}
+            <tr class="tot"><td>Queda por mes</td>${totQ}</tr>
+            <tr class="tot"><td>Pago del mes</td>${totP}</tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+  </section>`;
+}
+
+function viewLimite() {
+  const c = cascada();
+  const lista = c.previstosMes.map(x => `
+    <div class="pend${x.hecho ? " hecho" : ""}">
+      <button class="chk" data-hecho="${x.id}" aria-pressed="${x.hecho}"
+              aria-label="Marcar ${esc(x.nombre)} como hecho">✓</button>
+      <input class="nom" value="${esc(x.nombre)}" data-previsto="${x.id}" data-field="nombre"
+             spellcheck="false" autocomplete="off" aria-label="Concepto">
+      <input class="mini wide num" ${NUM} value="${fmtRaw(x.monto)}"
+             data-previsto="${x.id}" data-field="monto" aria-label="Monto">
+      <button class="iconbtn" data-del-previsto="${x.id}" aria-label="Eliminar">✕</button>
+    </div>`).join("");
+
+  return `
+  <section data-anim>
+    <div class="h-sec">Puedes gastar con la tarjeta — ${esc(state.mes)}</div>
+    <div class="limbox">
+      <div class="lbl">Puedes gastar todavía</div>
+      <div class="big num" data-out="margen">—</div>
+      <div class="pbar" style="margin-top:14px"><i data-out-bar="margen"></i></div>
+      <div class="pcap"><span class="lbl" data-out="margen-nota">—</span>
+        <span class="num" data-out="tope-total">—</span></div>
+    </div>
+
+    <div class="summary">
+      <div class="srow"><span class="k">Ingreso esperado del próximo mes</span><span class="lead"></span>
+        <input class="v num" ${NUM} style="border:0;background:none;text-align:right;width:11ch"
+               value="${fmtRaw(state.ingresoProximo)}" data-meta="ingresoProximo"
+               aria-label="Ingreso esperado del próximo mes"></div>
+      <div class="srow"><span class="k">Pago de tarjeta del próximo mes</span><span class="lead"></span>
+        <span class="v num" data-out="neg-deuda-proxima">—</span></div>
+      <div class="srow"><span class="k sub"><span style="padding-left:14px">deuda que traes</span></span>
+        <span class="lead"></span><span class="v num" data-out="deuda-actual">—</span></div>
+      <div class="srow"><span class="k sub"><span style="padding-left:14px">ya cargado este mes</span></span>
+        <span class="lead"></span><span class="v num" data-out="cargado-tarjeta">—</span></div>
+      <div class="srow"><span class="k sub"><span style="padding-left:14px">gastos previstos</span></span>
+        <span class="lead"></span><span class="v num" data-out="previsto-mini">—</span></div>
+      <div class="srow"><span class="k">Fijos que pagarás en efectivo</span><span class="lead"></span>
+        <span class="v num" data-out="neg-fijos-efectivo">—</span></div>
+      <div class="srow"><span class="k">Presupuestos y metas</span><span class="lead"></span>
+        <span class="v num" data-out="neg-comprometido">—</span></div>
+      <div class="srow head"><span class="k">Puedes gastar todavía</span><span class="lead"></span>
+        <span class="v num" data-out="margen2">—</span></div>
+    </div>
+
+    <p class="note" style="margin-top:12px">Todo lo que cargues a la tarjeta este mes —fijos,
+      suscripciones, variables y previstos— se suma a lo que pagarás el mes que viene. Por eso el
+      número baja solo cuando marcas un gasto como <b>tarjeta</b>.</p>
+
+    <div class="actions" style="margin-top:12px">
+      <span class="lbl">Tope propio (opcional)</span>
+      <input class="mini wide num" ${NUM} value="${c.tope === null ? "" : fmtRaw(c.tope)}"
+             placeholder="—" data-limite aria-label="Tope propio">
+      <button class="pbtn" data-action="quitar-tope">Quitar tope</button>
+    </div>
+  </section>
+
+  <section data-anim style="--d:.06s">
+    <div class="h-sec">Gastos previstos</div>
+    ${c.previstosMes.length ? lista : `<div class="empty">Anota aquí lo que ya sabes que vas a cargar
+      a la tarjeta: una cena, el súper, gasolina. Se suman al pago del próximo mes automáticamente.</div>`}
+    <div class="quick">
+      <input class="mini txt" style="flex:1; min-width:120px" placeholder="¿Qué vas a gastar?" data-previsto-nombre>
+      <input class="mini wide num" ${NUM} placeholder="0.00" data-previsto-monto>
+      <button class="pbtn solido" data-previsto-add="1">Anotar</button>
+    </div>
+  </section>
+
+  <section data-anim style="--d:.12s">
+    <div class="h-sec">Cómo vas cargando la tarjeta</div>
+    <div class="summary">
+      <div class="srow"><span class="k">Gastos fijos en tarjeta</span><span class="lead"></span>
+        <span class="v num" data-out="fijos-tarjeta">—</span></div>
+      <div class="srow"><span class="k">Suscripciones en tarjeta</span><span class="lead"></span>
+        <span class="v num" data-out="subs-tarjeta">—</span></div>
+      <div class="srow"><span class="k">Variables en tarjeta</span><span class="lead"></span>
+        <span class="v num" data-out="consumos-tarjeta">—</span></div>
+      <div class="srow total"><span class="k">Total cargado este mes</span><span class="lead"></span>
+        <span class="v num" data-out="cargado-tarjeta2">—</span></div>
+    </div>
+  </section>`;
+}
+
+const VISTAS = { mes: viewMes, subs: viewSubs, gastos: viewGastos, metas: viewMetas,
+                 limite: viewLimite, tarjetas: viewTarjetas };
+
+/* ─────────────────  pintado parcial  ─────────────────  */
+function pon(sel, txt) { $$(sel).forEach(e => { if (e.textContent !== txt) e.textContent = txt; }); }
+function ancho(sel, pct) {
+  $$(sel).forEach(e => { const w = (Math.max(0, Math.min(1, pct)) * 100).toFixed(2) + "%";
+    if (e.style.width !== w) e.style.width = w; });
+}
+function recalc() {
+  const c = cascada(), T = calcTarjetas();
+
+  pon('[data-out="ingreso"]', fmt(state.ingreso));
+  pon('[data-out="neg-fijos"]', menos(c.fijosEfectivo));
+  pon('[data-out="neg-subs"]', menos(c.subsEfectivo));
+  pon('[data-out="neg-presup"]', menos(c.c.presupuestado));
+  pon('[data-out="neg-metas"]', menos(c.m.mensual));
+  pon('[data-out="disponible"]', fmt(c.disponible));
+  pon('[data-out="libre"]', fmt(c.libre));
+  pon('[data-out="neg-pagado-tarjetas"]', menos(c.pagadoTarjetas));
+  pon('[data-out="saldo-inicial"]', fmt(state.saldoInicial));
+  pon('[data-out="cargado-tarjeta"]', fmt(c.cargadoTarjeta));
+  pon('[data-out="cargado-tarjeta2"]', fmt(c.cargadoTarjeta));
+  pon('[data-out="fijos-tarjeta"]', fmt(c.fijosTarjeta));
+  pon('[data-out="subs-tarjeta"]', fmt(c.subsTarjeta));
+  pon('[data-out="consumos-tarjeta"]', fmt(c.consumosTarjeta));
+  pon('[data-out="deuda-actual"]', fmt(c.T.actual));
+  pon('[data-out="previsto-mini"]', fmt(c.previstoTotal));
+  pon('[data-out="neg-deuda-proxima"]', menos(c.deudaProxima));
+  pon('[data-out="neg-fijos-efectivo"]', menos(c.fijosEfectivo));
+  pon('[data-out="neg-comprometido"]', menos(c.c.presupuestado + c.m.mensual));
+  pon('[data-out="margen"]', fmt(c.margenTarjeta));
+  pon('[data-out="margen2"]', fmt(c.margenTarjeta));
+  pon('[data-out="margen-nota"]', (Number(state.ingresoProximo) || 0) > 0
+    ? `el pago se come ${Math.round((c.deudaProxima / state.ingresoProximo) * 100)}% de tu ingreso del próximo mes`
+    : "anota tu ingreso del próximo mes");
+  pon('[data-out="tope-total"]', c.tope !== null ? `tope tuyo ${fmt(c.tope)}` : "");
+  const sinProximo = !((Number(state.ingresoProximo) || 0) > 0);
+  $$('[data-out="margen"]').forEach(e =>
+    e.classList.toggle("debt", !sinProximo && c.margenTarjeta < 0));
+  ancho('[data-out-bar="margen"]',
+    (Number(state.ingresoProximo) || 0) > 0 ? c.deudaProxima / state.ingresoProximo : 0);
+  const barMar = document.querySelector('[data-out-bar="margen"]')?.parentElement;
+  if (barMar) barMar.classList.toggle("over", c.deudaProxima > (Number(state.ingresoProximo) || 0));
+  pon('[data-out="nota-pagado-tarjetas"]', c.pagadoTarjetas ? "anotado este mes" : "nada anotado");
+  const positivo = c.quedaTarjetas >= 0;
+  pon('[data-out="etiqueta-final"]', positivo ? "Te queda para tarjetas" : "Te pasaste por");
+  $$('[data-out="queda-tarjetas"]').forEach(e => {
+    const txt = fmt(Math.abs(c.quedaTarjetas));
+    if (e.textContent !== txt) e.textContent = txt;
+    e.classList.toggle("debt", !positivo);
+  });
+  const caja = document.querySelector('[data-out="etiqueta-cabecera"]');
+  if (caja) {
+    caja.textContent = sinProximo ? "Anota el ingreso del próximo mes"
+      : (c.margenTarjeta >= 0 ? "Puedes gastar con la tarjeta" : "Vas por encima del próximo mes");
+  }
+  pon('[data-out="subs-nota"]', c.s.activas ? `${c.s.activas} activas` : "ninguna");
+  pon('[data-out="subs-total"]', fmt(c.s.total));
+  pon('[data-out="subs-conteo"]', `${c.s.activas} de ${state.suscripciones.length}`);
+  pon('[data-out="subs-pausadas"]', c.s.pausadas ? `${c.s.pausadas} pausadas` : "");
+  pon('[data-out="presupuesto-txt"]', fmt(c.c.presupuestado));
+  pon('[data-out="gastado-txt"]', fmt(c.c.gastado));
+  pon('[data-out="presupuesto"]', fmt(c.c.presupuestado));
+  pon('[data-out="gastado"]', fmt(c.c.gastado));
+  pon('[data-out="por-gastar"]', fmt(c.sinGastar));
+  pon('[data-out="metas-mensual"]', fmt(c.m.mensual));
+  pon('[data-out="metas-ahorrado"]', fmt(c.m.ahorrado));
+  pon('[data-out="metas-falta"]', fmt(c.m.filas.reduce((a, f) => a + f.faltante, 0)));
+  pon('[data-out="deuda-hoy"]', fmt(T.actual));
+  pon('[data-out="fijos-nota"]', `${c.g.nPag} de ${state.gastos.length} pagados · ${fmt(c.g.pendiente)} pendiente`);
+  pon('[data-out="proyeccion"]', T.actual > 0
+    ? (c.libre > 0 ? `${Math.ceil(T.actual / c.libre)} meses` : "ajusta tus metas")
+    : "sin deuda");
+  pon('[data-out="meses-deuda"]', T.actual <= 0 ? "nada, ya no debes"
+    : (c.libre > 0 ? `${Math.ceil(T.actual / c.libre)} meses` : "sin margen: baja metas o presupuestos"));
+
+  ancho('[data-out-bar="pagado"]', c.g.total > 0 ? c.g.pagado / c.g.total : 0);
+  document.querySelectorAll(".bar > i[data-out-bar='pagado']").forEach(e => {
+    if (e.style.width === "0.00%" || !e.style.width) e.style.width = "0%";
+  });
+
+  for (const s of state.suscripciones)
+    pon(`[data-out="sub-gtq:${s.id}"]`, s.moneda === "USD" ? `= ${fmt(asGTQ(s))}` : "");
+
+  for (const f of c.c.filas) {
+    pon(`[data-out="cat-txt:${f.id}"]`, `${fmt(f.gastado)} de ${fmt(f.presupuesto)}`);
+    pon(`[data-out="cat-rest:${f.id}"]`, f.restante >= 0 ? `quedan ${fmt(f.restante)}` : `pasado ${fmt(-f.restante)}`);
+    ancho(`[data-out-bar="cat:${f.id}"]`, f.pct);
+    const barra = document.querySelector(`[data-out-bar="cat:${f.id}"]`)?.parentElement;
+    if (barra) barra.classList.toggle("over", f.gastado > f.presupuesto);
+  }
+  for (const f of c.m.filas) {
+    pon(`[data-out="meta-ahorrado:${f.id}"]`, fmt(f.ahorrado));
+    pon(`[data-out="meta-objetivo:${f.id}"]`, fmt(f.objetivo));
+    pon(`[data-out="meta-pct:${f.id}"]`, `${Math.round(f.pct * 100)}% · faltan ${fmt(f.faltante)}`);
+    pon(`[data-out="meta-eta:${f.id}"]`, f.meses === null ? "sin aporte mensual"
+      : (f.meses === 0 ? "¡alcanzada!" : `~${f.meses} meses`));
+    ancho(`[data-out-bar="meta:${f.id}"]`, f.pct);
+  }
+
+  const sel = mesSel();
+  for (const t of state.tarjetas) {
+    const r = T.perCard.get(t.id);
+    const saldo = Number(t.saldo) || 0;
+    const pct = saldo > 0 ? Math.max(0, Math.min(1, (saldo - r.actual) / saldo)) : 0;
+    for (const m of state.meses) {
+      const p = r.pagos[m.id];
+      pon(`[data-out="pago:${t.id}:${m.id}"]`, p === undefined ? "" : fmt(p));
+      const q = t.quedas[m.id];
+      pon(`[data-out="mxq:${t.id}:${m.id}"]`, q === undefined ? "·" : fmt(q));
+      pon(`[data-out="mxe:${t.id}:${m.id}"]`, q === undefined ? "" : fmt(r.entradas[m.id]));
+    }
+    pon(`[data-out="entra:${t.id}"]`, fmt(r.entradas[sel.id]));
+  pon(`[data-out="pct:${t.id}"]`, `${(pct * 100).toFixed(0)}% pagado`);
+    pon(`[data-out="resto:${t.id}"]`, `quedan ${fmt(r.actual)}`);
+    ancho(`[data-out-bar="card:${t.id}"]`, pct);
+  }
+  for (const m of state.meses) {
+    pon(`[data-out="tq:${m.id}"]`, T.totQ[m.id] === undefined ? "·" : fmt(T.totQ[m.id]));
+    pon(`[data-out="tp:${m.id}"]`, T.totP[m.id] === undefined ? "" : fmt(T.totP[m.id]));
+  }
+  pon('[data-out="mes-actual"]', state.mes || "—");
+  pon('[data-out="pagados-conteo"]', `${c.g.nPag} de ${state.gastos.length} pagados`);
+  pon('[data-out="pendiente-mes"]', c.g.nPen ? `${fmt(c.g.pendiente)} pendiente` : "mes cerrado");
+  $$("tr.tot td").forEach(td => td.classList.toggle("sintoma", td.textContent === "·"));
+  void sel;
+}
+/* ─────────────────────────── chat ─────────────────────────── */
+let chatAbierto = false, enviando = false, chatMsgs = [], chatInicio = 0, chatReloj = null;
+try { chatMsgs = JSON.parse(localStorage.getItem("cofre_chat") || "[]") || []; } catch { chatMsgs = []; }
+const guardarChat = () => { try { localStorage.setItem("cofre_chat", JSON.stringify(chatMsgs.slice(-24))); } catch {} };
+const formato = t => esc(t).replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
+function burbuja(m) {
+  if (m.rol === "user") return `<div class="bub yo">${esc(m.texto)}</div>`;
+  const cuerpo = m.texto ? formato(m.texto)
+    : `<span class="pensando" id="chat-estado">consultando tus datos…</span>`;
+  const herr = m.herramientas?.length
+    ? `<div class="herramientas">usó: ${m.herramientas.join(" · ")}</div>` : "";
+  return `<div class="bub ia">${cuerpo}${herr}</div>`;
+}
+function renderChat() {
+  const raiz = document.getElementById("chat-root");
+  if (!raiz) return;
+  if (!chatAbierto) { raiz.innerHTML = ""; return; }
+  raiz.innerHTML = `<div class="chat">
+    <div class="chat-top">
+      <div><span class="eyebrow">Asistente</span><div class="t">Pregúntale a la IA</div></div>
+      <button class="iconbtn" data-chat-cerrar="1" aria-label="Cerrar">✕</button>
+    </div>
+    <div class="chat-log" id="chat-log">
+      ${chatMsgs.length ? chatMsgs.map(burbuja).join("") : `
+        <div class="bub ia">Puedo ver tus números y también cambiar cosas: marcar pagos, anotar gastos,
+          ajustar presupuestos y límites. ¿Qué necesitas?</div>
+        <div class="sug">
+          ${["¿Cuánto puedo gastar todavía?", "¿Cómo voy este mes?", "¿Qué me conviene pagar primero?",
+             "¿Voy bien con mis metas?"].map(x =>
+            `<button class="pbtn" data-chat-sug="${esc(x)}">${esc(x)}</button>`).join("")}
+        </div>`}
+    </div>
+    <form class="chat-in" data-chat-form>
+      <input name="texto" placeholder="Escribe tu pregunta…" autocomplete="off" ${enviando ? "disabled" : ""}>
+      <button class="pbtn solido" type="submit" ${enviando ? "disabled" : ""}>Enviar</button>
+    </form>
+  </div>`;
+  const log = document.getElementById("chat-log");
+  if (log) log.scrollTop = log.scrollHeight;
+}
+function relojChat() {
+  const el = document.getElementById("chat-estado");
+  if (!el || !enviando) return;
+  const seg = Math.round((Date.now() - chatInicio) / 1000);
+  const ult = chatMsgs[chatMsgs.length - 1];
+  const h = ult?.herramientas?.length ? " · " + ult.herramientas[ult.herramientas.length - 1] : "";
+  el.textContent = `consultando tus datos… ${seg}s${h}`;
+}
+async function enviarChat(texto) {
+  texto = String(texto || "").trim();
+  if (!texto || enviando) return;
+  chatMsgs.push({ rol: "user", texto });
+  chatMsgs.push({ rol: "ai", texto: "", herramientas: [] });
+  enviando = true; chatInicio = Date.now();
+  clearInterval(chatReloj); chatReloj = setInterval(relojChat, 1000);
+  guardarChat(); renderChat();
+  try {
+    const res = await fetch("/api/chat", {
+      method: "POST", credentials: "same-origin",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ messages: chatMsgs
+        .filter(m => m.rol === "user" || (m.rol === "ai" && m.texto))
+        .map(m => ({ role: m.rol === "user" ? "user" : "assistant", content: m.texto })) }),
+    });
+    if (!res.ok || !res.body) throw new Error("No pude consultar al asistente (" + res.status + ").");
+    const lector = res.body.getReader(), dec = new TextDecoder();
+    let buf = "";
+    for (;;) {
+      const { done, value } = await lector.read();
+      if (done) break;
+      buf += dec.decode(value, { stream: true });
+      const partes = buf.split("\n\n"); buf = partes.pop() || "";
+      for (const parte of partes) {
+        const linea = parte.split("\n").find(l => l.startsWith("data: "));
+        if (!linea) continue;
+        let ev; try { ev = JSON.parse(linea.slice(6)); } catch { continue; }
+        const ult = chatMsgs[chatMsgs.length - 1];
+        if (ev.t === "herramienta") {
+          ult.herramientas.push(ev.nombre);
+          ult.texto = "";                 // lo que dijo antes de usar la herramienta se descarta
+        }
+        else if (ev.t === "trozo") ult.texto += ev.v;
+        else if (ev.t === "texto") ult.texto = ev.v;
+        else if (ev.t === "error") { ult.texto = ev.v; ult.error = true; }
+        else if (ev.t === "fin" && ev.usadas?.length) ult.cambio = true;
+        renderChat();
+      }
+    }
+  } catch (e) {
+    const ult = chatMsgs[chatMsgs.length - 1];
+    ult.texto = e.message; ult.error = true;
+  }
+  enviando = false; clearInterval(chatReloj); guardarChat(); renderChat();
+  const ult = chatMsgs[chatMsgs.length - 1];
+  if (ult?.cambio) {
+    if (ult.texto) ult.texto += "\n\n_(actualicé la app con los cambios)_";
+    guardarChat(); renderChat();
+    await sincronizar();
+  }
+}
+async function sincronizar() {
+  const { status, data } = await api("/api/state");
+  if (status !== 200 || !data) return;
+  rev = data.rev; state = data.state; completar();
+  pending = false; conflict = false; sync = "saved"; render();
+}
+document.getElementById("chat-root").addEventListener("submit", e => {
+  const f = e.target.closest("[data-chat-form]");
+  if (!f) return;
+  e.preventDefault();
+  const v = f.texto.value; f.texto.value = "";
+  enviarChat(v);
+});
+document.getElementById("chat-root").addEventListener("click", e => {
+  const b = e.target.closest("button");
+  if (!b) return;
+  if (b.dataset.chatCerrar) { chatAbierto = false; renderChat(); }
+  else if (b.dataset.chatSug) enviarChat(b.dataset.chatSug);
+});
+
+function pintarSync() {
+  const el = $(".sync"); if (!el) return;
+  el.dataset.s = sync;
+  el.innerHTML = "<i></i>" + ({ saving: "guardando", saved: "guardado", error: "error",
+    conflict: "conflicto", offline: "sin conexión", idle: "conectado" }[sync] || sync);
+}
+function pintarAviso() {
+  const caja = $("#aviso"); if (!caja) return;
+  if (errorMsg) {
+    caja.innerHTML = `<div class="alert${sync === "error" || sync === "conflict" ? " error" : ""}">
+      ${esc(errorMsg)}
+      ${conflict ? `<div class="actions"><button class="pbtn" data-action="traer">Traer los últimos datos</button></div>` : ""}
+    </div>`;
+  } else if (exito) {
+    caja.innerHTML = `<div class="alert"><div style="white-space:pre-wrap">${esc(exito)}</div>
+      <div class="actions"><button class="pbtn" data-action="ok-aviso">Entendido</button></div></div>`;
+  } else caja.innerHTML = "";
+}
+
+function render() {
+  if (!authed) { $("#app").innerHTML = viewLogin(errorMsg); pintarSync(); return; }
+  document.body.style.paddingBottom = "";
+  $("#app").innerHTML = `
+  <header class="masthead"><div class="wrap">
+    <div class="mh-top">
+      <span class="eyebrow">Cofre</span>
+      <span class="mh-right">
+        <span class="sync" data-s="idle"><i></i>conectado</span>
+        <span class="mh-month" data-out="mes-actual">—</span>
+      </span>
+    </div>
+    <div class="mh-main">
+      <div>
+        <div class="eyebrow" data-out="etiqueta-cabecera">Puedes gastar con la tarjeta</div>
+        <div class="display num" data-out="margen">—</div>
+      </div>
+      <div class="mh-side">
+        <div class="eyebrow">Deuda en tarjetas</div>
+        <div class="num" data-out="deuda-hoy">—</div>
+      </div>
+    </div>
+    <div class="bar" style="margin-top:12px"><i data-out-bar="pagado"></i></div>
+    <div class="mh-foot">
+      <span class="num" data-out="pagados-conteo">—</span>
+      <span class="num" data-out="pendiente-mes">—</span>
+    </div>
+  </div></header>
+  <main><div id="aviso"></div>${VISTAS[tab]()}</main>
+  <button class="fab" data-chat-abrir="1">✦ Preguntar</button>
+  <nav class="tabbar"><div class="wrap">
+    ${PESTANAS.map(([k, t]) => `<button data-tab="${k}" aria-selected="${tab === k}">${t}</button>`).join("")}
+  </div></nav>`;
+  recalc(); pintarSync(); pintarAviso(); renderChat();
+}
+
+/* ─────────────────────────── eventos ─────────────────────────── */
+$("#app").addEventListener("input", e => {
+  const el = e.target, d = el.dataset;
+  if (d.meta === "ingreso") state.ingreso = parsear(el.value) ?? 0;
+  else if (d.meta === "ingresoProximo") state.ingresoProximo = parsear(el.value) ?? 0;
+  else if (d.meta === "usdGtq") state.usdGtq = parsear(el.value) ?? 0;
+  else if (d.meta === "mes") state.mes = el.value;
+  else if (d.gasto) {
+    const g = state.gastos.find(x => x.id === d.gasto);
+    if (g) {
+      g[d.field] = d.field === "monto" ? (parsear(el.value) ?? 0) : el.value;
+      if (d.field === "dia" || d.field === "nota") {
+        const meta = el.closest(".row")?.querySelector(".meta");
+        if (meta) meta.textContent = [g.dia && "día " + g.dia, g.medio === "tarjeta" && "tarjeta",
+          g.nota].filter(Boolean).join("  ·  ");
+      }
+    }
+  } else if (d.sub) {
+    const s = state.suscripciones.find(x => x.id === d.sub);
+    if (s) s[d.field] = d.field === "monto" ? (parsear(el.value) ?? 0) : el.value;
+  } else if (d.cat) {
+    const k = state.categorias.find(x => x.id === d.cat);
+    if (k) k[d.field] = d.field === "presupuesto" ? (parsear(el.value) ?? 0) : el.value;
+  } else if (d.metaId) {
+    const m = state.metas.find(x => x.id === d.metaId);
+    if (m) m[d.field] = d.field === "nombre" ? el.value : (parsear(el.value) ?? 0);
+  } else if (d.queda) {
+    const t = state.tarjetas.find(x => x.id === d.queda);
+    if (t) { const v = el.value.trim() === "" ? null : parsear(el.value);
+      if (v === null) delete t.quedas[d.mes]; else t.quedas[d.mes] = v; }
+  } else if (d.tarjeta) {
+    const t = state.tarjetas.find(x => x.id === d.tarjeta);
+    const base = mesBase();
+    /* el saldo de partida solo se edita en el mes donde arranca el historial */
+    const editable = d.field !== "saldo" || !base || mesSel().id === base.id;
+    if (t && editable) t[d.field] = d.field === "saldo" ? (parsear(el.value) ?? 0) : el.value;
+  } else if (d.labelMes) {
+    const m = state.meses.find(x => x.id === d.labelMes);
+    if (m) m.label = el.value;
+  } else if (d.meta === "saldoInicial") {
+    state.saldoInicial = parsear(el.value) ?? 0;
+  } else if (d.limite !== undefined) {
+    setLimite(parsear(el.value) ?? 0);
+  } else if (d.previsto) {
+    const x = state.previstos.find(y => y.id === d.previsto);
+    if (x) x[d.field] = d.field === "monto" ? (parsear(el.value) ?? 0) : el.value;
+  } else if (d.previstoNombre !== undefined || d.previstoMonto !== undefined) {
+    return;                                  // el previsto se anota con el botón
+  } else if (d.consumoMonto !== undefined || d.consumoNota !== undefined || d.consumoCat !== undefined) {
+    return;                                  // el gasto se registra con el botón
+  } else if (d.aporteMonto !== undefined) {
+    return;
+  } else return;
+  programarGuardado(); recalc();
+});
+
+$("#app").addEventListener("focusin", e => {
+  const el = e.target;
+  if (el.matches?.("input[data-num]")) { const n = parsear(el.value); el.value = n === null ? "" : String(n); }
+});
+$("#app").addEventListener("focusout", e => {
+  const el = e.target;
+  if (el.matches?.("input[data-num]")) el.value = fmtRaw(parsear(el.value), Number(el.dataset.dec) || 2);
+});
+
+$("#app").addEventListener("submit", async e => {
+  const form = e.target.closest("[data-login]"); if (!form) return;
+  e.preventDefault();
+  const btn = form.querySelector("button"); btn.disabled = true;
+  const { status, data } = await api("/api/login", { method: "POST",
+    body: JSON.stringify({ password: form.password.value }) });
+  btn.disabled = false;
+  if (status === 200) { errorMsg = ""; await hidratar(); }
+  else { errorMsg = data?.error || "No pude entrar."; render(); }
+});
+
+$("#app").addEventListener("click", async e => {
+  const btn = e.target.closest("button"); if (!btn) return;
+  const d = btn.dataset;
+  ocupado = true;
+  try {
+    if (d.pagado) {
+      const g = state.gastos.find(x => x.id === d.pagado);
+      if (g) {
+        g.pagado = !g.pagado;
+        btn.closest(".row")?.classList.toggle("done", g.pagado);
+        btn.setAttribute("aria-pressed", String(g.pagado));
+        programarGuardado(); recalc();
+      }
+    } else if (d.open) { abiertos[d.open] = !abiertos[d.open]; render(); }
+    else if (d.delGasto) { state.gastos = state.gastos.filter(x => x.id !== d.delGasto); programarGuardado(); render(); }
+    else if (d.add === "gasto") {
+      state.gastos.push({ id: nuevoId(), nombre: "Nuevo gasto", monto: 0, dia: "", nota: "", pagado: false });
+      programarGuardado(); render();
+    } else if (d.add === "sub") {
+      state.suscripciones.push({ id: nuevoId(), nombre: "Nueva suscripción", monto: 0,
+        moneda: "GTQ", dia: "", activa: true, nota: "" });
+      programarGuardado(); render();
+    } else if (d.delSub) {
+      state.suscripciones = state.suscripciones.filter(x => x.id !== d.delSub);
+      programarGuardado(); render();
+    } else if (d.moneda) {
+      const s = state.suscripciones.find(x => x.id === d.moneda);
+      if (s) { s.moneda = s.moneda === "USD" ? "GTQ" : "USD"; programarGuardado(); render(); }
+    } else if (d.activa) {
+      const s = state.suscripciones.find(x => x.id === d.activa);
+      if (s) { s.activa = !s.activa; programarGuardado(); render(); }
+    } else if (d.add === "cat") {
+      state.categorias.push({ id: nuevoId(), nombre: "Nueva categoría", presupuesto: 0 });
+      programarGuardado(); render();
+    } else if (d.delCat) {
+      state.categorias = state.categorias.filter(x => x.id !== d.delCat);
+      state.consumos = state.consumos.filter(g => g.categoriaId !== d.delCat);
+      programarGuardado(); render();
+    } else if (d.consumoAdd) {
+      const sel = $("[data-consumo-cat]"), monto = $("[data-consumo-monto]"), nota = $("[data-consumo-nota]");
+      const v = parsear(monto.value);
+      if (v !== null && v > 0 && sel?.value) {
+        state.consumos.unshift({ id: nuevoId(), categoriaId: sel.value, monto: v,
+          fecha: new Date().toISOString().slice(0, 10), nota: nota?.value || "", mes: state.mes });
+        programarGuardado(); render();
+      } else monto?.focus();
+    } else if (d.delConsumo) {
+      state.consumos = state.consumos.filter(g => g.id !== d.delConsumo);
+      programarGuardado(); render();
+    } else if (d.add === "meta") {
+      state.metas.push({ id: nuevoId(), nombre: "Nueva meta", objetivo: 0, inicial: 0,
+        aporteMensual: 0, fechaLimite: "", nota: "" });
+      programarGuardado(); render();
+    } else if (d.delMeta) {
+      state.metas = state.metas.filter(x => x.id !== d.delMeta);
+      state.aportes = state.aportes.filter(a => a.metaId !== d.delMeta);
+      programarGuardado(); render();
+    } else if (d.aportar) {
+      const inp = document.querySelector(`[data-aporte-monto="${d.aportar}"]`);
+      const v = parsear(inp?.value);
+      if (v !== null && v > 0) {
+        state.aportes.unshift({ id: nuevoId(), metaId: d.aportar, monto: v,
+          fecha: new Date().toISOString().slice(0, 10), mes: state.mes });
+        programarGuardado(); render();
+      } else inp?.focus();
+    } else if (d.add === "tarjeta") {
+      state.tarjetas.push({ id: nuevoId(), nombre: "Nueva tarjeta", saldo: 0, quedas: {} });
+      programarGuardado(); render();
+    } else if (d.delTarjeta) {
+      state.tarjetas = state.tarjetas.filter(x => x.id !== d.delTarjeta);
+      programarGuardado(); render();
+    } else if (d.selmes) { selMes = d.selmes; localStorage.setItem("cofre_selmes", selMes); render(); }
+    else if (d.add === "mes") {
+      const u = state.meses[state.meses.length - 1];
+      state.meses.push({ id: nuevoId(), label: siguienteMes(u ? u.label : "") });
+      programarGuardado(); render();
+    } else if (d.delMes) {
+      if (state.meses.length <= 1) return;
+      state.meses = state.meses.filter(x => x.id !== d.delMes);
+      for (const t of state.tarjetas) delete t.quedas[d.delMes];
+      if (selMes === d.delMes) { selMes = null; localStorage.removeItem("cofre_selmes"); }
+      programarGuardado(); render();
+    } else if (d.medio) {
+      const g = state.gastos.find(x => x.id === d.medio);
+      if (g && (d.valor === "tarjeta" || d.valor === "efectivo")) {
+        g.medio = d.valor; programarGuardado(); render();
+      }
+    } else if (d.medioTodos) {
+      state.gastos.forEach(g => g.medio = d.medioTodos);
+      programarGuardado(); render();
+    } else if (d.medioCat) {
+      const c = state.categorias.find(x => x.id === d.medioCat);
+      if (c) { c.medio = c.medio === "tarjeta" ? "efectivo" : "tarjeta"; programarGuardado(); render(); }
+    } else if (d.medioSub) {
+      const x = state.suscripciones.find(y => y.id === d.medioSub);
+      if (x) { x.medio = x.medio === "tarjeta" ? "efectivo" : "tarjeta"; programarGuardado(); render(); }
+    } else if (d.action === "ok-aviso") {
+      exito = ""; pintarAviso();
+    } else if (d.action === "cerrar-mes") {
+      const sig = siguienteMes(state.mes);
+      const conservar = d.conservar === "1";
+      const marcados = state.gastos.filter(g => g.pagado).length;
+      const seguro = confirm(
+        `Vas a cerrar ${state.mes} y pasar a ${sig}.\n\n`
+        + `· ${state.mes} queda en el historial y ya no cambia\n`
+        + (conservar
+            ? `· Los ${marcados} gastos fijos que ya marcaste pasan a ${sig} TAMBIÉN marcados\n`
+              + `  (los pagaste adelantados: son de ${sig})\n`
+            : `· Los gastos fijos de ${sig} arrancan sin marcar\n`)
+        + `· El efectivo que te sobró pasa como saldo inicial\n`
+        + `· Los gastos variables y previstos se quedan en ${state.mes}\n`
+        + `· El ingreso esperado pasa a ser el ingreso de ${sig}\n\n¿Cierro el mes?`);
+      if (!seguro) return;
+      btn.disabled = true; btn.textContent = "Cerrando…";
+      const { status, data } = await api("/api/cerrar-mes", { method: "POST",
+        body: JSON.stringify({ mes: sig, conservarPagados: conservar }) });
+      btn.disabled = false;
+      if (status === 200) {
+        rev = data.rev; state = data.state; completar();
+        pending = false; conflict = false; sync = "saved"; errorMsg = "";
+        exito = data.mensaje;
+        tab = "mes"; localStorage.setItem("cofre_tab", tab);
+        render(); window.scrollTo(0, 0);
+      } else {
+        exito = ""; errorMsg = data?.error || "No pude cerrar el mes."; render();
+      }
+    } else if (d.action === "quitar-tope") {
+      state.limites = state.limites.filter(l => l.mes !== state.mes);
+      programarGuardado(); render();
+    } else if (d.hecho) {
+      const x = state.previstos.find(y => y.id === d.hecho);
+      if (x) { x.hecho = !x.hecho; programarGuardado(); render(); }
+    } else if (d.delPrevisto) {
+      state.previstos = state.previstos.filter(y => y.id !== d.delPrevisto);
+      programarGuardado(); render();
+    } else if (d.previstoAdd) {
+      const nom = $("[data-previsto-nombre]"), mon = $("[data-previsto-monto]");
+      const v = parsear(mon?.value);
+      if (v !== null && v > 0) {
+        state.previstos.push({ id: nuevoId(), nombre: (nom?.value || "").trim() || "Gasto previsto",
+          monto: v, fecha: new Date().toISOString().slice(0, 10), hecho: false, mes: state.mes });
+        programarGuardado(); render();
+      } else mon?.focus();
+    } else if (d.chatAbrir) {
+      chatAbierto = true; renderChat();
+    } else if (d.action === "usar-sugerido") {
+      setLimite(cascada().limiteSugerido); programarGuardado(); render();
+    } else if (d.tab) {
+      tab = d.tab; localStorage.setItem("cofre_tab", tab); render(); window.scrollTo(0, 0);
+    } else if (d.action === "export") {
+      descargar("cofre-respaldo.json", JSON.stringify(state, null, 2), "application/json");
+    } else if (d.action === "import") { $("#file-import").click(); }
+    else if (d.action === "print") { window.print(); }
+    else if (d.action === "traer") { await hidratar(); }
+    else if (d.action === "logout") {
+      await api("/api/logout", { method: "POST" }); authed = false; state = null; render();
+    } else if (d.action === "tasa") {
+      btn.disabled = true; btn.textContent = "Consultando…";
+      const { status, data } = await api("/api/tipo-cambio");
+      btn.disabled = false; btn.textContent = "Traer el tipo de cambio actual";
+      if (status === 200) { state.usdGtq = data.gtqPorUsd; programarGuardado(); render(); }
+      else { errorMsg = data?.error || "No pude consultar el tipo de cambio."; pintarAviso(); }
+    }
+  } finally { ocupado = false; }
+});
+
+$("#app").addEventListener("toggle", e => {
+  if (e.target.matches?.("details.mx")) mxAbierto = e.target.open;
+}, true);
+
+$("#app").addEventListener("change", e => {
+  if (e.target.id !== "file-import" || !e.target.files.length) return;
+  const fr = new FileReader();
+  fr.onload = () => {
+    try {
+      const s = JSON.parse(fr.result);
+      if (!s || typeof s !== "object" || !Array.isArray(s.gastos)) throw new Error("forma inválida");
+      state = s; programarGuardado(); render();
+    } catch { alert("Ese archivo no es un respaldo válido."); }
+    e.target.value = "";
+  };
+  fr.readAsText(e.target.files[0]);
+});
+
+function siguienteMes(label) {
+  const MESES = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+  const m = /^([A-Za-zÁÉÍÓÚáéíóú]{3})\s+(\d{4})$/.exec(label || "");
+  if (!m) return "";
+  let i = MESES.findIndex(x => x.toLowerCase() === m[1].toLowerCase());
+  let anio = parseInt(m[2], 10);
+  if (i < 0) return "";
+  i++; if (i > 11) { i = 0; anio++; }
+  return MESES[i] + " " + anio;
+}
+function descargar(nombre, texto, tipo) {
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([texto], { type: tipo }));
+  a.download = nombre; a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+
+hidratar();
+</script>
+</body>
+</html>

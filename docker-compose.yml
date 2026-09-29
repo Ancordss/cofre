@@ -1,0 +1,28 @@
+services:
+  app:
+    build:
+      # Dokploy resuelve el contexto DENTRO de su propio contenedor,
+      # y /etc/dokploy es el único punto compartido con el host.
+      context: /etc/dokploy/cofre
+      dockerfile: Dockerfile
+    image: cofre:latest
+    pull_policy: never
+    restart: unless-stopped
+    environment:
+      APP_PASSWORD: ${APP_PASSWORD:?falta APP_PASSWORD}
+      API_TOKEN: ${API_TOKEN:-}
+      CMD_API_KEY: ${CMD_API_KEY:-}
+      LLM_MODEL: ${LLM_MODEL:-deepseek/deepseek-v4.1-flash}
+      PORT: "3000"
+      DB_PATH: /data/app.db
+    volumes:
+      - datos:/data
+    ports:
+      - 3000
+    networks:
+      - dokploy-network
+volumes:
+  datos: {}
+networks:
+  dokploy-network:
+    external: true

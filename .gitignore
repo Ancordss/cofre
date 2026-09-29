@@ -1,0 +1,20 @@
+# dependencias
+node_modules/
+
+# datos locales
+*.db
+*.db-shm
+*.db-wal
+data/
+
+# secretos
+.env
+.env.*
+!.env.example
+
+# sistema
+.DS_Store
+Thumbs.db
+
+# logs
+*.log
