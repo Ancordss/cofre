@@ -826,12 +826,27 @@ function aplicarEstado(data) {
   window.__version = data.version || "";
   sync = "saved"; errorMsg = ""; conflict = false; soloLectura = false;
   guardarCopia();
+  /* Las preferencias pueden venir de otro aparato (o haber cambiado allí), así
+     que se vuelven a aplicar cada vez que llega el estado. */
+  aplicarVidrio(); aplicarAcento();
+}
+/* La primera vez que abres en un aparato que ya tenía ajustes elegidos, esos
+   ajustes suben a tus datos para que no se queden solo aquí. */
+function subirPrefsLocales() {
+  if (!state || state.prefs) return;
+  const p = {};
+  for (const k of CLAVES_PREF) {
+    const l = localStorage.getItem("cofre_" + k);
+    if (l) p[k] = l;
+  }
+  state.prefs = p;
+  if (Object.keys(p).length) programarGuardado();
 }
 
 async function hidratar() {
   const { status, data } = await api("/api/state");
   if (status === 401) { authed = false; soloLectura = false; sync = "idle"; render(); return; }
-  if (status === 200) { authed = true; aplicarEstado(data); render(); return; }
+  if (status === 200) { authed = true; aplicarEstado(data); subirPrefsLocales(); render(); return; }
   /* Sin red: si hay copia local, se muestra en modo consulta. */
   const copia = leerCopia();
   if (copia && status === 0) {
@@ -1992,17 +2007,19 @@ function pintarVidrio() {
   }
   const prof = Math.min(14, Math.max(4, Math.round(n * .16)));
   const fuerza = Math.round(n * .42), ab = Math.round(n * .16);
+  const b = blurN();
   for (const el of piezas) {
     const r = el.getBoundingClientRect();
     if (r.width < 8 || r.height < 8) continue;
     const w = Math.round(r.width), h = Math.round(r.height);
-    const firma = [w, h, fuerza, ab, prof].join(":");
+    /* el desenfoque va en la firma: sin él, mover esa barra no regeneraba
+       nada y el cambio no se veía */
+    const firma = [w, h, b, fuerza, ab, prof].join(":");
     if (el.dataset.vidrioListo === firma) continue;
     el.dataset.vidrioListo = firma;
     const filtro = filtroDeLente(w, h, Math.min(Math.round(h / 2), Math.round(radioDe(el))), prof, fuerza, ab);
     /* la cabecera apaga lo que tiene detrás para camuflarse sin volverse opaca */
     const apagado = el.dataset.vidrioLuz !== undefined ? " brightness(var(--vidrio-luz-cabecera))" : "";
-    const b = blurN();
     const fondo = (b > 0 ? `blur(${Math.round(b * .5)}px) ` : "") + `${filtro} saturate(${100 + n}%)${apagado}`;
     el.style.webkitBackdropFilter = fondo;
     el.style.backdropFilter = fondo;
@@ -2083,7 +2100,7 @@ $("#app").addEventListener("input", e => {
   const el = e.target, d = el.dataset;
   /* el vidrio no es un dato del servidor: se guarda aquí y se aplica en vivo */
   if (d.vidrio !== undefined) {
-    localStorage.setItem("cofre_vidrio", el.value);
+    escribirPref("vidrio", el.value);
     el.style.setProperty("--pct", el.value + "%");
     /* el tinte y el desenfoque se aplican al instante; la refracción se
        rehace al soltar, porque regenerar el mapa en cada cuadro del arrastre
@@ -2093,7 +2110,7 @@ $("#app").addEventListener("input", e => {
     return;
   }
   if (d.desenfoque !== undefined) {
-    localStorage.setItem("cofre_blur", el.value);
+    escribirPref("blur", el.value);
     el.style.setProperty("--pct", el.value + "%");
     aplicarVidrio();
     clearTimeout(tVidrio); tVidrio = setTimeout(pintarVidrio, 150);
@@ -2101,7 +2118,7 @@ $("#app").addEventListener("input", e => {
   }
   /* el color y el resalte no son datos del servidor: viven en el dispositivo */
   if (d.resalteSelect !== undefined) {
-    localStorage.setItem("cofre_resalte", el.value);
+    escribirPref("resalte", el.value);
     aplicarAcento(); render();
     return;
   }
@@ -2336,7 +2353,7 @@ $("#app").addEventListener("click", async e => {
     } else if (d.action === "usar-sugerido") {
       setLimite(cascada().limiteSugerido); programarGuardado(); render();
     } else if (d.acento) {
-      localStorage.setItem("cofre_acento", d.acento);
+      escribirPref("acento", d.acento);
       aplicarAcento(); render();
     } else if (d.tab) {
       cambiarTab(d.tab);
@@ -2350,7 +2367,7 @@ $("#app").addEventListener("click", async e => {
     else if (d.action === "traer") { await hidratar(); }
     else if (d.action === "logout") {
       await api("/api/logout", { method: "POST" }); authed = false; state = null;
-      try { localStorage.removeItem("cofre_copia"); } catch {}
+      try { localStorage.removeItem("cofre_copia"); CLAVES_PREF.forEach(k => localStorage.removeItem("cofre_" + k)); } catch {}
       soloLectura = false; render();
     } else if (d.action === "tasa") {
       btn.disabled = true; btn.textContent = "Consultando…";
@@ -2415,12 +2432,30 @@ function esOscuro() {
   return r.dataset.tema === "dark" ||
     (r.dataset.tema !== "light" && matchMedia("(prefers-color-scheme:dark)").matches);
 }
+/* ── preferencias ───────────────────────────────────────────────────────
+   El color, el vidrio y el desenfoque viven en tus datos, no en el navegador:
+   así los eliges en el computador y aparecen en el teléfono. localStorage
+   queda solo como copia local, para pintar al instante al abrir sin esperar
+   al servidor. */
+const CLAVES_PREF = ["acento", "resalte", "vidrio", "blur"];
+function leerPref(k) {
+  const delServidor = state && state.prefs ? state.prefs[k] : "";
+  if (delServidor) return String(delServidor);
+  return localStorage.getItem("cofre_" + k) || "";
+}
+function escribirPref(k, v) {
+  localStorage.setItem("cofre_" + k, v);
+  if (!state) return;
+  if (!state.prefs) state.prefs = {};
+  state.prefs[k] = v;
+  programarGuardado();
+}
 function acentoElegido() {
-  const k = localStorage.getItem("cofre_acento");
+  const k = leerPref("acento");
   return ACENTOS[k] ? k : "multicolor";
 }
 function resalteElegido() {
-  const k = localStorage.getItem("cofre_resalte");
+  const k = leerPref("resalte");
   return ACENTOS[k] ? k : "multicolor";
 }
 /* Un solo sitio decide el color de todo: botones de acción, pestañas, barras,
@@ -2438,17 +2473,15 @@ function aplicarAcento(oscuro) {
 
 /* ── intensidad del vidrio ──────────────────────────────────────────────
    0 lo deja opaco del todo; 100 lo lleva al extremo contrario, casi solo
-   cristal. Se mueve desde Ajustes y se guarda en este dispositivo. */
+   cristal. Se mueve desde Ajustes y viaja con tus datos. */
 function vidrioN() {
-  const v = parseInt(localStorage.getItem("cofre_vidrio"), 10);
+  const v = parseInt(leerPref("vidrio"), 10);
   return Number.isFinite(v) ? Math.min(100, Math.max(0, v)) : 70;
 }
 /* El desenfoque va aparte del vidrio: son dos cosas distintas. El vidrio es
-   cuánto se ve a través; el desenfoque, cuánto se difumina lo de atrás. Se
-   pueden querer por separado: cristal muy transparente y apenas difuminado,
-   o al revés. */
+   cuánto se ve a través; el desenfoque, cuánto se difumina lo de atrás. */
 function blurN() {
-  const v = parseInt(localStorage.getItem("cofre_blur"), 10);
+  const v = parseInt(leerPref("blur"), 10);
   return Number.isFinite(v) ? Math.min(100, Math.max(0, v)) : 70;
 }
 function aplicarVidrio(oscuro) {

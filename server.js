@@ -112,6 +112,13 @@ agregarColumna("subscriptions", "medio", "TEXT NOT NULL DEFAULT 'efectivo'");
    La columna spendings.medio queda en la base pero ya no se usa. */
 agregarColumna("categories", "medio", "TEXT NOT NULL DEFAULT 'tarjeta'");
 agregarColumna("settings", "ingreso_proximo", "REAL NOT NULL DEFAULT 0");
+/* Preferencias de apariencia. Van en la base, con los datos, para que el color,
+   el vidrio y el desenfoque te sigan de un aparato a otro en vez de quedarse en
+   el navegador donde los elegiste. Vacío = sin elegir. */
+agregarColumna("settings", "pref_acento", "TEXT NOT NULL DEFAULT ''");
+agregarColumna("settings", "pref_resalte", "TEXT NOT NULL DEFAULT ''");
+agregarColumna("settings", "pref_vidrio", "TEXT NOT NULL DEFAULT ''");
+agregarColumna("settings", "pref_blur", "TEXT NOT NULL DEFAULT ''");
 
 const columnasSettings = db.query("PRAGMA table_info(settings)").all().map(c => c.name);
 if (!columnasSettings.includes("usd_gtq"))
@@ -173,9 +180,10 @@ const num = (v, d = 0) => { const n = Number(v); return Number.isFinite(n) ? n :
 
 /* ───────────────────────────── estado ───────────────────────────── */
 function readState() {
-  const s = db.query("SELECT ingreso, mes, usd_gtq, moneda_base, saldo_inicial, ingreso_proximo FROM settings WHERE id = 1")
+  const s = db.query("SELECT ingreso, mes, usd_gtq, moneda_base, saldo_inicial, ingreso_proximo, pref_acento, pref_resalte, pref_vidrio, pref_blur FROM settings WHERE id = 1")
     .get() || { ingreso: 0, mes: "", usd_gtq: USD_DEFAULT, moneda_base: "GTQ",
-                saldo_inicial: 0, ingreso_proximo: 0 };
+                saldo_inicial: 0, ingreso_proximo: 0,
+                pref_acento: "", pref_resalte: "", pref_vidrio: "", pref_blur: "" };
   const saldos = db.query("SELECT card_id, month_id, amount FROM balances").all();
   const porTarjeta = new Map();
   for (const b of saldos) {
@@ -209,6 +217,10 @@ function readState() {
     previstos: db.query(
       "SELECT id,nombre,monto,fecha,hecho,mes FROM planned ORDER BY pos"
     ).all().map(x => ({ ...x, hecho: !!x.hecho })),
+    prefs: {
+      acento: s.pref_acento, resalte: s.pref_resalte,
+      vidrio: s.pref_vidrio, blur: s.pref_blur,
+    },
   };
 }
 
@@ -217,9 +229,11 @@ function readState() {
 function writeState(st) {
   const tiene = k => Array.isArray(st[k]);
   db.transaction(() => {
-    db.query("UPDATE settings SET ingreso = ?, mes = ?, usd_gtq = ?, saldo_inicial = ?, ingreso_proximo = ? WHERE id = 1")
+    db.query("UPDATE settings SET ingreso = ?, mes = ?, usd_gtq = ?, saldo_inicial = ?, ingreso_proximo = ?, pref_acento = ?, pref_resalte = ?, pref_vidrio = ?, pref_blur = ? WHERE id = 1")
       .run(num(st.ingreso), String(st.mes ?? ""), num(st.usdGtq, USD_DEFAULT),
-           num(st.saldoInicial), num(st.ingresoProximo));
+           num(st.saldoInicial), num(st.ingresoProximo),
+           String(st.prefs?.acento ?? ""), String(st.prefs?.resalte ?? ""),
+           String(st.prefs?.vidrio ?? ""), String(st.prefs?.blur ?? ""));
     if (tiene("gastos")) {
       db.query("DELETE FROM expenses").run();
       st.gastos.forEach((g, i) => db.query(
@@ -356,6 +370,14 @@ function normalizar(st) {
     id: String(a.id || uid()), metaId: String(a.metaId ?? ""), monto: num(a.monto),
     fecha: String(a.fecha ?? ""), mes: String(a.mes ?? ""),
   }));
+  /* Preferencias de apariencia. Van con los datos para que el color, el vidrio
+     y el desenfoque te sigan de un aparato a otro, en vez de quedarse en el
+     navegador donde los elegiste. Se guardan como texto y vacío = sin elegir. */
+  const pre = st.prefs && typeof st.prefs === "object" ? st.prefs : {};
+  out.prefs = {
+    acento: String(pre.acento ?? ""), resalte: String(pre.resalte ?? ""),
+    vidrio: String(pre.vidrio ?? ""), blur: String(pre.blur ?? ""),
+  };
   return out;
 }
 
