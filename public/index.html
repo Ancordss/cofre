@@ -56,7 +56,6 @@
   --text:#1C1C1E; --text-2:#3C3C43; --text-3:#8E8E93;
   /* acento y semánticos */
   --accent:#007AFF; --accent-2:#0062CC; --accent-soft:#E6F0FF;
-  --green:#248A3D; --green-soft:#E3F6E7; --green-line:#34C759;
   --red:#D70015; --red-soft:#FFE8E6; --red-line:#FF3B30;
   --orange:#B25000; --orange-soft:#FFF0E0; --orange-line:#FF9500;
   --purple:#8944AB; --purple-soft:#F5E9FA;
@@ -86,7 +85,6 @@
     --acento-texto:#FFFFFF;
     --text:#FFFFFF; --text-2:#EBEBF5; --text-3:#8E8E93;
     --accent:#0A84FF; --accent-2:#409CFF; --accent-soft:#0A2540;
-    --green:#5BE47C; --green-soft:#122A19; --green-line:#30D158;
     --red:#FF6B60; --red-soft:#331512; --red-line:#FF453A;
     --orange:#FFB340; --orange-soft:#33240E; --orange-line:#FF9F0A;
     --purple:#CF8BF3; --purple-soft:#2A1436;
@@ -110,7 +108,6 @@ html[data-tema="dark"]{
     --acento-texto:#FFFFFF;
     --text:#FFFFFF; --text-2:#EBEBF5; --text-3:#8E8E93;
     --accent:#0A84FF; --accent-2:#409CFF; --accent-soft:#0A2540;
-    --green:#5BE47C; --green-soft:#122A19; --green-line:#30D158;
     --red:#FF6B60; --red-soft:#331512; --red-line:#FF453A;
     --orange:#FFB340; --orange-soft:#33240E; --orange-line:#FF9F0A;
     --purple:#CF8BF3; --purple-soft:#2A1436;
@@ -144,7 +141,11 @@ button{cursor:pointer; -webkit-appearance:none; appearance:none}
 }
 .h-sec::after{content:""; flex:1; height:1px; background:var(--border-2); display:none}
 small,.small{font-size:12.5px; color:var(--text-3)}
-.settled{color:var(--green)} .debt{color:var(--red)} .brass{color:var(--orange)}
+/* "Te queda por gastar" y "Gastado" van en la misma lista: si el primero
+   siguiera al acento, con el acento en rojo los dos se leerían igual y no se
+   sabría cuál es la buena noticia. El bueno se queda en el color normal y el
+   gasto mantiene el rojo de aviso. */
+.settled{color:var(--text)} .debt{color:var(--red)} .brass{color:var(--orange)}
 
 /* ── cabecera ─────────────────────────────────────────────────────────── */
 .masthead{
@@ -163,7 +164,9 @@ small,.small{font-size:12.5px; color:var(--text-3)}
   display:inline-flex; align-items:center; gap:6px; font-size:11.5px; font-weight:600;
   color:var(--text-3)
 }
-.sync i{width:7px; height:7px; border-radius:50%; background:var(--green-line); display:block; transition:background .3s}
+/* El puntito de "guardado" es gris, no verde: guardar es lo normal, no un
+   logro. Solo se enciende cuando pasa algo (guardando, error, sin conexión). */
+.sync i{width:7px; height:7px; border-radius:50%; background:var(--text-3); display:block; transition:background .3s}
 .sync[data-s="saving"] i{background:var(--orange-line)}
 .sync[data-s="error"] i,.sync[data-s="conflict"] i{background:var(--red-line)}
 .sync[data-s="offline"] i{background:var(--text-3)}
@@ -172,7 +175,7 @@ small,.small{font-size:12.5px; color:var(--text-3)}
 .mh-side{text-align:right; flex:0 0 auto; padding-bottom:3px}
 .mh-side .num{font-size:15px; font-weight:600; color:var(--text-2)}
 .bar{height:6px; background:var(--surface-3); border-radius:var(--r-pill); overflow:hidden}
-.bar > i{display:block; height:100%; width:0; background:var(--green-line); border-radius:inherit;
+.bar > i{display:block; height:100%; width:0; background:var(--accent); border-radius:inherit;
   transition:width .6s cubic-bezier(.22,1,.36,1)}
 .mh-foot{margin-top:10px; display:flex; justify-content:space-between; gap:12px; align-items:center}
 .mh-foot .num{font-size:12.5px; font-weight:500; color:var(--text-3)}
@@ -227,10 +230,14 @@ section{margin-bottom:26px}
 }
 .row .meta{display:flex; gap:8px; margin-top:2px; font-size:13px; color:var(--text-3)}
 .row .meta:empty{display:none}
-.row.done{background:var(--green-soft)}
+/* Una fila pagada se apaga a gris en vez de teñirse: es lo que hace el sistema
+   en las listas de tareas. Si siguiera al acento, con el acento en rojo una
+   fila pagada se vería como una deuda. */
+.row.done{background:color-mix(in srgb, var(--text) 6.5%, transparent)}
 .row.done .name{color:var(--text-3); text-decoration:line-through; text-decoration-color:var(--border)}
-.row.done .amt{color:var(--green)}
-@media (hover:hover){.row:hover{background:var(--surface-2)} .row.done:hover{background:var(--green-soft)}}
+.row.done .amt{color:var(--text-3)}
+@media (hover:hover){.row:hover{background:var(--surface-2)}
+  .row.done:hover{background:color-mix(in srgb, var(--text) 11%, transparent)}}
 
 .tick{
   width:30px; height:30px; padding:0; border:2px solid var(--surface-3); border-radius:50%;
@@ -242,7 +249,7 @@ section{margin-bottom:26px}
   fill:none; stroke:#fff; stroke-width:3.2; stroke-linecap:round; stroke-linejoin:round;
   stroke-dasharray:26; stroke-dashoffset:26; transition:stroke-dashoffset .3s ease .05s
 }
-.tick[aria-pressed=true]{background:var(--green-line); border-color:var(--green-line)}
+.tick[aria-pressed=true]{background:var(--accent); border-color:var(--accent)}
 .tick[aria-pressed=true] path{stroke-dashoffset:0}
 .tick:active{transform:scale(.9)}
 
@@ -341,7 +348,7 @@ section{margin-bottom:26px}
 }
 .qfield input::placeholder{color:var(--text-3); font-size:16px; font-weight:400}
 .pago{text-align:right; flex:0 0 auto}
-.pago .v{font-size:19px; font-weight:700; font-variant-numeric:tabular-nums; color:var(--green)}
+.pago .v{font-size:19px; font-weight:700; font-variant-numeric:tabular-nums; color:var(--accent)}
 .tprog{margin-top:18px}
 .tprog .bar{height:6px}
 .tprog .bar > i{background:var(--accent)}
@@ -403,7 +410,7 @@ select{
   background:var(--surface); display:grid; place-items:center; padding:0; color:#fff;
   font-size:15px; font-weight:700; flex:0 0 auto; transition:.2s
 }
-.pend .chk[aria-pressed=true]{background:var(--green-line); border-color:var(--green-line)}
+.pend .chk[aria-pressed=true]{background:var(--accent); border-color:var(--accent)}
 .pend .chk:active{transform:scale(.9)}
 .pend .nom{flex:1; min-width:0; font-size:16px; font-weight:500; border:0; background:none; padding:2px 0}
 .pend.hecho .nom{color:var(--text-3); text-decoration:line-through; text-decoration-color:var(--border)}
@@ -436,7 +443,7 @@ table.mx th:first-child,table.mx td:first-child{
 table.mx th:first-child{background:var(--surface-2)}
 table.mx td .e{display:block; font-size:11.5px; color:var(--text-3); font-weight:500}
 table.mx td .q{display:block; font-weight:600}
-table.mx td .p{display:block; font-size:12px; font-weight:600; color:var(--green); min-height:15px}
+table.mx td .p{display:block; font-size:12px; font-weight:600; color:var(--accent); min-height:15px}
 table.mx td.sintoma{color:var(--text-3)}
 table.mx tr.tot td{background:var(--surface-2); font-weight:700; font-size:13px}
 table.mx tr.tot td:first-child{background:var(--surface-2)}
