@@ -48,6 +48,11 @@
                  0 .5px 0 rgba(255,255,255,.5);
   --vidrio-brillo: linear-gradient(180deg, rgba(255,255,255,.4), rgba(255,255,255,.03) 34%, rgba(255,255,255,0));
   --vidrio-sombra: 0 14px 40px rgba(0,0,0,.17), 0 2px 6px rgba(0,0,0,.06);
+  /* Cuánto se aclara u oscurece lo que se ve por detrás del cristal de la
+     cabecera. Es la alternativa a subir la opacidad: el cristal sigue siendo
+     transparente y con desenfoque, pero lo de atrás se apaga hasta el color
+     del fondo y la franja deja de notarse. */
+  --vidrio-luz-cabecera: 1.02;
   /* Botones: relleno plano, como los del sistema (imagen de referencia), no
      vidrio. El de acción sí lleva el color elegido, con la letra en blanco. */
   --btn-fondo:#E5E5EA; --btn-texto:#1C1C1E;
@@ -80,6 +85,9 @@
                    0 1px 0 rgba(255,255,255,.05);
     --vidrio-brillo: linear-gradient(180deg, rgba(255,255,255,.13), rgba(255,255,255,.02) 34%, rgba(255,255,255,0));
     --vidrio-sombra: 0 16px 44px rgba(0,0,0,.62), 0 2px 6px rgba(0,0,0,.4);
+    /* en oscuro lo de atrás se apaga a menos de la mitad, que es lo que deja
+       la cabecera del mismo negro del fondo sin volverla opaca */
+    --vidrio-luz-cabecera: .82;
     /* En oscuro, el gris del sistema y la letra en blanco: nada de vidrio, que
        era lo que se veía sucio. */
     --btn-fondo:#3A3A3C; --btn-texto:#FFFFFF;
@@ -104,6 +112,9 @@ html[data-tema="dark"]{
                    0 1px 0 rgba(255,255,255,.05);
     --vidrio-brillo: linear-gradient(180deg, rgba(255,255,255,.13), rgba(255,255,255,.02) 34%, rgba(255,255,255,0));
     --vidrio-sombra: 0 16px 44px rgba(0,0,0,.62), 0 2px 6px rgba(0,0,0,.4);
+    /* en oscuro lo de atrás se apaga a menos de la mitad, que es lo que deja
+       la cabecera del mismo negro del fondo sin volverla opaca */
+    --vidrio-luz-cabecera: .82;
     /* En oscuro, el gris del sistema y la letra en blanco: nada de vidrio, que
        era lo que se veía sucio. */
     --btn-fondo:#3A3A3C; --btn-texto:#FFFFFF;
@@ -150,15 +161,15 @@ small,.small{font-size:12.5px; color:var(--text-3)}
 .settled{color:var(--text)} .debt{color:var(--red)} .brass{color:var(--orange)}
 
 /* ── cabecera ─────────────────────────────────────────────────────────── */
-/* La cabecera se camufla: mismo color que el fondo, sin borde, sin filo y sin
-   el brillo de arriba. Además va casi opaca (el control de Ajustes sube hasta
-   aquí), porque al 46% el contenido difuminado de detrás la aclaraba y seguía
-   viéndose la franja. Ahora es el mismo color, y el desenfoque solo se intuye
-   cuando algo pasa por debajo. */
+/* La cabecera se camufla sin dejar de ser cristal: mismo color que el fondo,
+   sin borde, sin filo y sin brillo arriba, y lo que pasa por detrás se apaga
+   (--vidrio-luz-cabecera) en vez de subirle la opacidad. Así sigue siendo
+   transparente y con desenfoque, pero la franja no se nota. */
 .masthead{
   position:sticky; top:0; z-index:20;
-  background-color:rgb(var(--vidrio-rgb) / min(1, calc(var(--vidrio-alfa) + .44)));
-  -webkit-backdrop-filter:var(--vidrio-filtro); backdrop-filter:var(--vidrio-filtro);
+  background-color:rgb(var(--vidrio-rgb) / min(1, calc(var(--vidrio-alfa) + .02)));
+  -webkit-backdrop-filter:var(--vidrio-filtro) brightness(var(--vidrio-luz-cabecera));
+  backdrop-filter:var(--vidrio-filtro) brightness(var(--vidrio-luz-cabecera));
   padding:12px var(--pad) 14px;
   padding-top:calc(12px + env(safe-area-inset-top));
 }
@@ -1984,7 +1995,9 @@ function pintarVidrio() {
     if (el.dataset.vidrioListo === firma) continue;
     el.dataset.vidrioListo = firma;
     const filtro = filtroDeLente(w, h, Math.min(Math.round(h / 2), Math.round(radioDe(el))), prof, fuerza, ab);
-    const fondo = `blur(${Math.round(n * .5)}px) ${filtro} saturate(${100 + n}%)`;
+    /* la cabecera apaga lo que tiene detrás para camuflarse sin volverse opaca */
+    const apagado = el.dataset.vidrioLuz !== undefined ? " brightness(var(--vidrio-luz-cabecera))" : "";
+    const fondo = `blur(${Math.round(n * .5)}px) ${filtro} saturate(${100 + n}%)${apagado}`;
     el.style.webkitBackdropFilter = fondo;
     el.style.backdropFilter = fondo;
   }
@@ -2023,7 +2036,7 @@ function render() {
   if (!authed) { $("#app").innerHTML = viewLogin(errorMsg); pintarSync(); return; }
   document.body.style.paddingBottom = "";
   $("#app").innerHTML = `
-  <header class="masthead"><div class="wrap">
+  <header class="masthead" data-vidrio-luz><div class="wrap">
     <div class="mh-top">
       <span class="eyebrow">Cofre</span>
       <span class="mh-right">
