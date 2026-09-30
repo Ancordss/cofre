@@ -151,12 +151,13 @@ small,.small{font-size:12.5px; color:var(--text-3)}
 
 /* ── cabecera ─────────────────────────────────────────────────────────── */
 /* La cabecera se camufla: mismo color que el fondo, sin borde, sin filo y sin
-   el brillo de arriba. Ese brillo era el que se veía como una banda gris, y es
-   justo lo que aquí no queremos: una franja de lado a lado no tiene que
-   parecer un panel encima de la app. Se separa sola por el desenfoque. */
+   el brillo de arriba. Además va casi opaca (el control de Ajustes sube hasta
+   aquí), porque al 46% el contenido difuminado de detrás la aclaraba y seguía
+   viéndose la franja. Ahora es el mismo color, y el desenfoque solo se intuye
+   cuando algo pasa por debajo. */
 .masthead{
   position:sticky; top:0; z-index:20;
-  background-color:rgb(var(--vidrio-rgb) / var(--vidrio-alfa));
+  background-color:rgb(var(--vidrio-rgb) / min(1, calc(var(--vidrio-alfa) + .44)));
   -webkit-backdrop-filter:var(--vidrio-filtro); backdrop-filter:var(--vidrio-filtro);
   padding:12px var(--pad) 14px;
   padding-top:calc(12px + env(safe-area-inset-top));
