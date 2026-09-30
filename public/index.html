@@ -37,13 +37,12 @@
   color-scheme:light dark;
   /* superficies */
   --bg:#F2F2F7; --surface:#FFFFFF; --surface-2:#F2F2F7; --surface-3:#E9E9EE;
-  --glass:rgba(242,242,247,.62);
-  /* liquid glass: superficies que refractan la luz que tienen detrás */
-  --glass-card:rgba(255,255,255,.62);
-  --glass-edge:inset 0 1px 0 rgba(255,255,255,.95), inset 0 0 0 .5px rgba(255,255,255,.55);
-  --glass-brillo:linear-gradient(180deg, rgba(255,255,255,.5), rgba(255,255,255,0) 60%);
-  --blur:saturate(190%) blur(26px);
-  --luz-1:rgba(0,122,255,.22); --luz-2:rgba(137,68,171,.16); --luz-3:rgba(52,199,89,.14);
+  --glass:rgba(242,242,247,.78);
+  /* píldora flotante: el vidrio refracta lo que pasa por debajo al hacer scroll */
+  --glass-pill:rgba(255,255,255,.72);
+  --blur-pill:saturate(180%) blur(24px);
+  --pill-filo:inset 0 1px 0 rgba(255,255,255,.85), inset 0 0 0 .5px rgba(255,255,255,.4);
+  --pill-sombra:0 10px 30px rgba(0,0,0,.16), 0 2px 8px rgba(0,0,0,.07);
   /* texto */
   --text:#1C1C1E; --text-2:#3C3C43; --text-3:#8E8E93;
   /* acento y semánticos */
@@ -64,12 +63,11 @@
 }
 @media (prefers-color-scheme:dark){ html:not([data-tema="light"]){
     --bg:#000000; --surface:#1C1C1E; --surface-2:#2C2C2E; --surface-3:#3A3A3C;
-    --glass:rgba(0,0,0,.55);
-    --glass-card:rgba(28,28,30,.55);
-    --glass-edge:inset 0 1px 0 rgba(255,255,255,.11), inset 0 0 0 .5px rgba(255,255,255,.07);
-    --glass-brillo:linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,0) 60%);
-    --blur:saturate(190%) blur(28px);
-    --luz-1:rgba(10,132,255,.44); --luz-2:rgba(191,90,242,.32); --luz-3:rgba(48,209,88,.20);
+    --glass:rgba(0,0,0,.72);
+    --glass-pill:rgba(28,28,30,.62);
+    --blur-pill:saturate(180%) blur(28px);
+    --pill-filo:inset 0 1px 0 rgba(255,255,255,.13), inset 0 0 0 .5px rgba(255,255,255,.06);
+    --pill-sombra:0 12px 34px rgba(0,0,0,.55), 0 2px 8px rgba(0,0,0,.35);
     --text:#FFFFFF; --text-2:#EBEBF5; --text-3:#8E8E93;
     --accent:#0A84FF; --accent-2:#409CFF; --accent-soft:#0A2540;
     --green:#5BE47C; --green-soft:#122A19; --green-line:#30D158;
@@ -82,12 +80,11 @@
   }}
 html[data-tema="dark"]{
     --bg:#000000; --surface:#1C1C1E; --surface-2:#2C2C2E; --surface-3:#3A3A3C;
-    --glass:rgba(0,0,0,.55);
-    --glass-card:rgba(28,28,30,.55);
-    --glass-edge:inset 0 1px 0 rgba(255,255,255,.11), inset 0 0 0 .5px rgba(255,255,255,.07);
-    --glass-brillo:linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,0) 60%);
-    --blur:saturate(190%) blur(28px);
-    --luz-1:rgba(10,132,255,.44); --luz-2:rgba(191,90,242,.32); --luz-3:rgba(48,209,88,.20);
+    --glass:rgba(0,0,0,.72);
+    --glass-pill:rgba(28,28,30,.62);
+    --blur-pill:saturate(180%) blur(28px);
+    --pill-filo:inset 0 1px 0 rgba(255,255,255,.13), inset 0 0 0 .5px rgba(255,255,255,.06);
+    --pill-sombra:0 12px 34px rgba(0,0,0,.55), 0 2px 8px rgba(0,0,0,.35);
     --text:#FFFFFF; --text-2:#EBEBF5; --text-3:#8E8E93;
     --accent:#0A84FF; --accent-2:#409CFF; --accent-soft:#0A2540;
     --green:#5BE47C; --green-soft:#122A19; --green-line:#30D158;
@@ -103,16 +100,8 @@ html{-webkit-text-size-adjust:100%; scroll-behavior:smooth}
 body{
   margin:0; background:var(--bg); color:var(--text); font-family:var(--font);
   font-size:16px; line-height:1.42; letter-spacing:-.01em;
-  padding-bottom:calc(96px + env(safe-area-inset-bottom));
+  padding-bottom:calc(108px + env(safe-area-inset-bottom));
   -webkit-font-smoothing:antialiased; -webkit-tap-highlight-color:transparent;
-}
-/* luz de fondo: el vidrio solo se ve si hay algo detrás que refractar */
-body::before{
-  content:""; position:fixed; inset:0; z-index:-1; pointer-events:none;
-  background:
-    radial-gradient(80vmax 62vmax at 8% -4%, var(--luz-1), transparent 72%),
-    radial-gradient(72vmax 56vmax at 104% 10%, var(--luz-2), transparent 74%),
-    radial-gradient(88vmax 62vmax at 46% 106%, var(--luz-3), transparent 74%);
 }
 button,input,select{font:inherit; color:inherit; letter-spacing:inherit}
 button{cursor:pointer; -webkit-appearance:none; appearance:none}
@@ -435,7 +424,7 @@ table.mx tr.tot td:first-child{background:var(--surface-2)}
   animation:rise .4s cubic-bezier(.22,1,.36,1) both
 }
 .alert.error{background:var(--red-soft); color:var(--red)}
-.alert.info{background:var(--orange-soft); box-shadow:var(--glass-edge)}
+.alert.info{background:var(--orange-soft); box-shadow:var(--sh-1)}
 .alert .actions{margin-top:12px}
 /* sin conexión: se puede leer y mover entre pestañas, pero no editar nada,
    porque no habría dónde guardarlo */
@@ -455,26 +444,40 @@ body.solo-lectura #aviso{pointer-events:auto}
 .login .pbtn{width:100%; padding:15px; font-size:16px}
 .login .error{color:var(--red); font-size:13px; min-height:18px; text-align:center}
 
-/* ── barra de pestañas ────────────────────────────────────────────────── */
+/* ── barra de pestañas ─────────────────────────────────────────────────
+   No es una franja pegada al borde: flota sobre el contenido, como la barra
+   de iOS 26. Una píldora de vidrio que refracta lo que pasa por debajo al
+   hacer scroll, y la pestaña activa lleva su propia cápsula dentro. */
 .tabbar{
-  position:fixed; left:0; right:0; bottom:0; z-index:30; background:var(--glass);
-  -webkit-backdrop-filter:saturate(180%) blur(22px); backdrop-filter:saturate(180%) blur(22px);
-  border-top:.5px solid var(--border); padding-bottom:env(safe-area-inset-bottom)
+  position:fixed; z-index:30; left:50%; transform:translateX(-50%);
+  bottom:calc(12px + env(safe-area-inset-bottom));
+  width:min(94vw, 470px);
+  background:var(--glass-pill);
+  -webkit-backdrop-filter:var(--blur-pill); backdrop-filter:var(--blur-pill);
+  border-radius:var(--r-pill);
+  box-shadow:var(--pill-sombra), var(--pill-filo);
+  padding:5px
 }
-.tabbar .wrap{max-width:880px; margin:0 auto; display:flex; padding:6px 4px 8px}
+.tabbar .wrap{display:flex; gap:2px}
 .tabbar button{
-  flex:1; min-width:0; border:0; background:none; padding:6px 2px 4px;
-  display:flex; flex-direction:column; align-items:center; gap:3px;
+  position:relative; flex:1; min-width:0; border:0; background:none; padding:8px 2px 6px;
+  display:flex; flex-direction:column; align-items:center; gap:3px; border-radius:var(--r-pill);
   font-size:10.5px; font-weight:600; color:var(--text-3);
-  transition:color .22s; position:relative
+  transition:color .22s
 }
-.tabbar button svg{width:24px; height:24px; transition:transform .28s cubic-bezier(.34,1.56,.64,1)}
+.tabbar button svg{width:23px; height:23px; position:relative; z-index:1;
+  transition:transform .28s cubic-bezier(.34,1.56,.64,1)}
+.tabbar button > span{position:relative; z-index:1}
 .tabbar button[aria-selected=true]{color:var(--accent)}
-.tabbar button[aria-selected=true] svg{transform:translateY(-1px) scale(1.08)}
+.tabbar button[aria-selected=true] svg{transform:translateY(-1px) scale(1.06)}
 .tabbar button:active svg{transform:scale(.9)}
-.tabbar button[aria-selected=true]::after{
-  content:""; position:absolute; top:-6px; left:50%; margin-left:-9px; width:18px; height:3px;
-  border-radius:var(--r-pill); background:var(--accent); animation:pop .3s cubic-bezier(.22,1,.36,1) both
+/* la cápsula de la pestaña activa */
+.tabbar button[aria-selected=true]::before{
+  content:""; position:absolute; inset:0; border-radius:var(--r-pill);
+  background:color-mix(in srgb, var(--accent) 13%, transparent);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.28),
+             inset 0 0 0 .5px color-mix(in srgb, var(--accent) 22%, transparent);
+  animation:pop .28s cubic-bezier(.22,1,.36,1) both
 }
 
 /* ── chat (es la pantalla de inicio) ──────────────────────────────────── */
@@ -498,7 +501,7 @@ body.solo-lectura #aviso{pointer-events:auto}
 }
 @keyframes latido{0%,100%{opacity:.35; transform:scale(.8)} 50%{opacity:1; transform:scale(1.15)}}
 .chat-in{
-  position:sticky; bottom:calc(78px + env(safe-area-inset-bottom)); z-index:6;
+  position:sticky; bottom:calc(94px + env(safe-area-inset-bottom)); z-index:6;
   display:flex; gap:8px; padding:9px; margin-top:8px;
   background:var(--glass); -webkit-backdrop-filter:saturate(180%) blur(20px);
   backdrop-filter:saturate(180%) blur(20px);
@@ -558,44 +561,6 @@ body.solo-lectura #aviso{pointer-events:auto}
   font-weight:600; background:var(--surface-2); color:var(--text-2)
 }
 
-/* ── liquid glass ───────────────────────────────────────────────────────
-   El material de Apple llevado a la web: la superficie no es blanca, es
-   vidrio que refracta la luz que tiene detrás, con un filo de brillo
-   arriba (donde pega la luz) y una sombra corta que la despega del fondo. */
-.card,.ledger,.summary,.tcard,.block,.empty,.quick,details.mx,.limbox,.seg,.bub.ia{
-  background:var(--glass-card);
-  -webkit-backdrop-filter:var(--blur); backdrop-filter:var(--blur);
-  box-shadow:var(--sh-1), var(--glass-edge)
-}
-/* las filas dejan ver el vidrio de su tarjeta en vez de taparlo */
-.row{background:transparent}
-.row.done{background:color-mix(in srgb, var(--green-line) 14%, transparent)}
-@media (hover:hover){
-  .row:hover{background:color-mix(in srgb, var(--text) 4%, transparent)}
-  .row.done:hover{background:color-mix(in srgb, var(--green-line) 20%, transparent)}
-}
-.tick{
-  background:color-mix(in srgb, var(--surface) 55%, transparent);
-  border-color:var(--border-2)
-}
-/* botones: el mismo vidrio, con el brillo arriba */
-.pbtn{
-  background:var(--glass-card); -webkit-backdrop-filter:var(--blur); backdrop-filter:var(--blur);
-  box-shadow:var(--glass-edge); border:.5px solid var(--border)
-}
-.pbtn.solido{
-  background:var(--glass-brillo), var(--accent); color:#fff; border-color:transparent;
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.4),
-             0 1px 2px rgba(0,0,0,.06), 0 6px 18px color-mix(in srgb, var(--accent) 32%, transparent)
-}
-.pbtn.solido:hover{background:var(--glass-brillo), var(--accent-2)}
-.bub.yo{
-  background:var(--glass-brillo), var(--accent);
-  box-shadow:0 1px 2px rgba(0,0,0,.05), 0 4px 14px color-mix(in srgb, var(--accent) 24%, transparent)
-}
-.chat-in{box-shadow:var(--sh-2), var(--glass-edge)}
-.chip{background:color-mix(in srgb, var(--surface-2) 70%, transparent)}
-
 /* ── móvil ────────────────────────────────────────────────────────────── */
 @media (max-width:520px){
   .bline:has(.chipmin){flex-wrap:wrap}
@@ -616,9 +581,7 @@ body.solo-lectura #aviso{pointer-events:auto}
 @media print{
   :root{--bg:#fff; --surface:#fff; --surface-2:#fff; --surface-3:#eee; --text:#000;
         --text-2:#222; --text-3:#666; --border:#bbb; --border-2:#ddd; --sh-1:none; --sh-2:none;
-        --glass-card:#fff; --glass-edge:none; --blur:none; --glass-brillo:none;
-        --luz-1:transparent; --luz-2:transparent; --luz-3:transparent}
-  body::before{display:none}
+        --glass-pill:#fff; --pill-filo:none; --pill-sombra:none; --blur-pill:none}
   .tabbar,.fab,.addbtn,.actions,.more,.tick,.iconbtn,.mtools,.chips,.sync,.quick,
   details.mx > summary,.chat,.limbox::before{display:none !important}
   body{background:#fff; padding:0}
