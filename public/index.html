@@ -71,8 +71,9 @@
 }
 @media (prefers-color-scheme:dark){ html:not([data-tema="light"]){
     --bg:#000000; --surface:#1C1C1E; --surface-2:#2C2C2E; --surface-3:#3A3A3C;
-    /* el tinte es gris humo, como los módulos del Centro de Control */
-    --vidrio-rgb: 70 70 76;
+    /* tinte negro, el mismo del fondo: el vidrio se ve por el desenfoque y el
+       filo, no por una capa gris encima */
+    --vidrio-rgb: 0 0 0;
     --vidrio-alfa: .46;
     --vidrio-filtro: saturate(170%) blur(35px);
     --vidrio-filo: inset 0 .5px 0 rgba(255,255,255,.3), inset 0 0 0 .5px rgba(255,255,255,.11),
@@ -94,8 +95,9 @@
   }}
 html[data-tema="dark"]{
     --bg:#000000; --surface:#1C1C1E; --surface-2:#2C2C2E; --surface-3:#3A3A3C;
-    /* el tinte es gris humo, como los módulos del Centro de Control */
-    --vidrio-rgb: 70 70 76;
+    /* tinte negro, el mismo del fondo: el vidrio se ve por el desenfoque y el
+       filo, no por una capa gris encima */
+    --vidrio-rgb: 0 0 0;
     --vidrio-alfa: .46;
     --vidrio-filtro: saturate(170%) blur(35px);
     --vidrio-filo: inset 0 .5px 0 rgba(255,255,255,.3), inset 0 0 0 .5px rgba(255,255,255,.11),
