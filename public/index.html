@@ -752,7 +752,7 @@ const $$ = s => [...document.querySelectorAll(s)];
 let state = null, rev = 0, authed = false;
 /* sin conexión: se muestra la última copia y no se deja editar, porque no
    habría dónde guardar los cambios */
-let soloLectura = false, visto = 0, tVidrio = 0;
+let soloLectura = false, visto = 0;
 let sync = "idle", errorMsg = "", conflict = false, exito = "";
 const TABS_VALIDAS = ["chat", "mes", "gastos", "metas", "limite", "tarjetas", "ajustes"];
 let tab = localStorage.getItem("cofre_tab") || "chat";
@@ -1680,8 +1680,8 @@ function viewAjustes() {
         <span class="setv num">${n("gastos")} gastos · ${n("suscripciones")} subs · ${n("categorias")} categorías · ${n("tarjetas")} tarjetas · ${n("metas")} metas</span></div>
       <div class="setrow"><span class="setk">Servidor</span>
         <span class="setv num">${esc(location.host)}</span></div>
-      <div class="setrow"><span class="setk">Vidrio<span class="sub">Qué puede hacer este navegador. Si dice "solo blur", el vidrio no refracta aquí y el desenfoque es lo único que actúa.</span></span>
-        <span class="setv num">${REFRACCION ? "refracción + blur" : "solo blur"}</span></div>
+      <div class="setrow"><span class="setk">Vidrio<span class="sub">Si dice "sin soporte", este navegador no sabe desenfocar el fondo y el vidrio se ve como un tinte plano.</span></span>
+        <span class="setv num">${SOPORTA_VIDRIO ? "desenfoque activo" : "sin soporte"}</span></div>
       <div class="setrow"><span class="setk">Versión</span>
         <span class="setv num">${esc(window.__version || "—")}</span></div>
       <div class="setrow"><span class="setk">Código</span>
@@ -1943,100 +1943,20 @@ function pintarAviso() {
   } else caja.innerHTML = "";
 }
 
-/* ── vidrio con refracción ──────────────────────────────────────────────
-   Los navegadores modernos aceptan un filtro SVG dentro de backdrop-filter.
-   Cuando lo aceptan, el vidrio no solo desenfoca: desvía los píxeles del
-   fondo como una lente y separa un poco los colores en el borde. Eso es lo
-   que se ve como vidrio de verdad y no como una caja borrosa.
-   Cuando no lo aceptan, queda el desenfoque de la hoja, que ya está ahí. */
-const REFRACCION = (() => {
+/* ── soporte del vidrio ─────────────────────────────────────────────────
+   El vidrio se apoya solo en backdrop-filter: desenfoque + tinte + filo.
+   Antes había además una refracción con un filtro SVG metido dentro, pero en
+   algunos navegadores eso no se pinta y se lleva por delante TODO el
+   backdrop-filter, desenfoque incluido: el vidrio quedaba como un tinte plano
+   y la barra de Blur no hacía nada. El efecto de las referencias del sistema
+   es blur simple, así que se quita y queda solo lo que funciona en todos
+   lados. Este dato se muestra en Ajustes para saber qué puede el navegador. */
+const SOPORTA_VIDRIO = (() => {
   try {
-    if (!CSS.supports("backdrop-filter", 'url("#cofre-lente") blur(2px)')) return false;
-    /* Safari acepta esa sintaxis pero no siempre pinta el filtro, y cuando eso
-       pasa se lleva por delante TODO el backdrop-filter, incluido el
-       desenfoque: el vidrio queda como un tinte plano y la barra de blur no
-       hace nada. Ahí se usa solo el desenfoque, que sí funciona en todos
-       lados. La refracción es un extra, no puede romper lo básico. */
-    const ua = navigator.userAgent;
-    if (/safari/i.test(ua) && !/chrome|chromium|crios|edg|android/i.test(ua)) return false;
-    return true;
+    return CSS.supports("backdrop-filter", "blur(1px)")
+        || CSS.supports("-webkit-backdrop-filter", "blur(1px)");
   } catch { return false; }
 })();
-
-/* El mapa que le dice a la lente hacia dónde empujar cada píxel: gris neutro
-   en el centro (no mueve nada) y color en los bordes (empuja). El rectángulo
-   redondeado gris de dentro es la forma del propio elemento. */
-function mapaDeLente(w, h, radio, prof) {
-  const svg = `<svg height="${h}" width="${w}" viewBox="0 0 ${w} ${h}" xmlns="http://www.w3.org/2000/svg">
-    <style>.m{mix-blend-mode:screen}</style>
-    <defs>
-      <linearGradient id="Y" x1="0" x2="0" y1="${Math.ceil((radio / h) * 15)}%" y2="${Math.floor(100 - (radio / h) * 15)}%">
-        <stop offset="0%" stop-color="#0F0"/><stop offset="100%" stop-color="#000"/>
-      </linearGradient>
-      <linearGradient id="X" x1="${Math.ceil((radio / w) * 15)}%" x2="${Math.floor(100 - (radio / w) * 15)}%" y1="0" y2="0">
-        <stop offset="0%" stop-color="#F00"/><stop offset="100%" stop-color="#000"/>
-      </linearGradient>
-    </defs>
-    <rect x="0" y="0" height="${h}" width="${w}" fill="#808080"/>
-    <g filter="blur(2px)">
-      <rect x="0" y="0" height="${h}" width="${w}" fill="#000080"/>
-      <rect x="0" y="0" height="${h}" width="${w}" fill="url(#Y)" class="m"/>
-      <rect x="0" y="0" height="${h}" width="${w}" fill="url(#X)" class="m"/>
-      <rect x="${prof}" y="${prof}" height="${h - 2 * prof}" width="${w - 2 * prof}"
-            fill="#808080" rx="${radio}" ry="${radio}" filter="blur(${prof}px)"/>
-    </g></svg>`;
-  return "data:image/svg+xml;utf8," + encodeURIComponent(svg);
-}
-/* Un desplazamiento por color (rojo, verde y azul un poco distintos) y los
-   tres fundidos con screen: de ahí sale el fleco de color del borde. */
-function filtroDeLente(w, h, radio, prof, fuerza, ab) {
-  const svg = `<svg height="${h}" width="${w}" viewBox="0 0 ${w} ${h}" xmlns="http://www.w3.org/2000/svg">
-    <defs><filter id="c" color-interpolation-filters="sRGB">
-      <feImage x="0" y="0" height="${h}" width="${w}" href="${mapaDeLente(w, h, radio, prof)}" result="mapa"/>
-      <feDisplacementMap in="SourceGraphic" in2="mapa" scale="${fuerza + ab * 2}" xChannelSelector="R" yChannelSelector="G"/>
-      <feColorMatrix values="1 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1 0" result="rojo"/>
-      <feDisplacementMap in="SourceGraphic" in2="mapa" scale="${fuerza + ab}" xChannelSelector="R" yChannelSelector="G"/>
-      <feColorMatrix values="0 0 0 0 0  0 1 0 0 0  0 0 0 0 0  0 0 0 1 0" result="verde"/>
-      <feDisplacementMap in="SourceGraphic" in2="mapa" scale="${fuerza}" xChannelSelector="R" yChannelSelector="G"/>
-      <feColorMatrix values="0 0 0 0 0  0 0 0 0 0  0 0 1 0 0  0 0 0 1 0" result="azul"/>
-      <feBlend in="rojo" in2="verde" mode="screen"/><feBlend in2="azul" mode="screen"/>
-    </filter></defs></svg>`;
-  return "url('data:image/svg+xml;utf8," + encodeURIComponent(svg) + "#c')";
-}
-function radioDe(el) {
-  const s = getComputedStyle(el);
-  const v = parseFloat(s.borderTopLeftRadius);
-  return Number.isFinite(v) ? v : 0;
-}
-/* Aplica la refracción a lo que flota. Se salta el trabajo si la pieza no
-   cambió de tamaño: generar el mapa y rehacer la capa no es gratis. */
-function pintarVidrio() {
-  const piezas = $$(".masthead, .tabbar, .chat-in");
-  const n = vidrioN();
-  if (!REFRACCION || n < 10) {
-    for (const el of piezas) { el.style.webkitBackdropFilter = ""; el.style.backdropFilter = ""; }
-    return;
-  }
-  const prof = Math.min(14, Math.max(4, Math.round(n * .16)));
-  const fuerza = Math.round(n * .42), ab = Math.round(n * .16);
-  const b = blurN();
-  for (const el of piezas) {
-    const r = el.getBoundingClientRect();
-    if (r.width < 8 || r.height < 8) continue;
-    const w = Math.round(r.width), h = Math.round(r.height);
-    /* el desenfoque va en la firma: sin él, mover esa barra no regeneraba
-       nada y el cambio no se veía */
-    const firma = [w, h, b, fuerza, ab, prof].join(":");
-    if (el.dataset.vidrioListo === firma) continue;
-    el.dataset.vidrioListo = firma;
-    const filtro = filtroDeLente(w, h, Math.min(Math.round(h / 2), Math.round(radioDe(el))), prof, fuerza, ab);
-    /* la cabecera apaga lo que tiene detrás para camuflarse sin volverse opaca */
-    const apagado = el.dataset.vidrioLuz !== undefined ? " brightness(var(--vidrio-luz-cabecera))" : "";
-    const fondo = (b > 0 ? `blur(${Math.round(b * .6)}px) ` : "") + `${filtro} saturate(${100 + n}%)${apagado}`;
-    el.style.webkitBackdropFilter = fondo;
-    el.style.backdropFilter = fondo;
-  }
-}
 
 /* ── barra de pestañas ────────────────────────────────────────────────── */
 /* La cápsula se mide contra los botones de verdad y se desliza al elegido.
@@ -2062,7 +1982,7 @@ function cambiarTab(k) {
   const engrane = $(".gear"); if (engrane) engrane.dataset.on = String(k === "ajustes");
   const m = $("main"); if (m) m.innerHTML = '<div id="aviso"></div>' + VISTAS[tab]();
   moverPastilla(true);
-  recalc(); pintarSync(); pintarAviso(); pintarVidrio();
+  recalc(); pintarSync(); pintarAviso();
   window.scrollTo(0, 0);
 }
 
@@ -2104,7 +2024,7 @@ function render() {
       + ICONOS[k] + `<span>${t}</span></button>`).join("")}
   </div></nav>`;
   recalc(); pintarSync(); pintarAviso();
-  moverPastilla(false); pintarVidrio();
+  moverPastilla(false);
 }
 
 /* ─────────────────────────── eventos ─────────────────────────── */
@@ -2114,18 +2034,14 @@ $("#app").addEventListener("input", e => {
   if (d.vidrio !== undefined) {
     escribirPref("vidrio", el.value);
     el.style.setProperty("--pct", el.value + "%");
-    /* el tinte y el desenfoque se aplican al instante; la refracción se
-       rehace al soltar, porque regenerar el mapa en cada cuadro del arrastre
-       no se notaría y sí costaría */
+    /* el tinte y el desenfoque son solo variables CSS: se aplican al instante */
     aplicarVidrio();
-    clearTimeout(tVidrio); tVidrio = setTimeout(pintarVidrio, 150);
     return;
   }
   if (d.desenfoque !== undefined) {
     escribirPref("blur", el.value);
     el.style.setProperty("--pct", el.value + "%");
     aplicarVidrio();
-    clearTimeout(tVidrio); tVidrio = setTimeout(pintarVidrio, 150);
     return;
   }
   /* el color y el resalte no son datos del servidor: viven en el dispositivo */
@@ -2524,7 +2440,7 @@ matchMedia("(prefers-color-scheme:dark)").addEventListener("change", aplicarTema
 let tMedida = 0;
 addEventListener("resize", () => {
   clearTimeout(tMedida);
-  tMedida = setTimeout(() => { moverPastilla(false); pintarVidrio(); }, 140);
+  tMedida = setTimeout(() => { moverPastilla(false); }, 140);
 });
 function descargar(nombre, texto, tipo) {
   const a = document.createElement("a");
