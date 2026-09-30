@@ -48,14 +48,10 @@
                  0 .5px 0 rgba(255,255,255,.5);
   --vidrio-brillo: linear-gradient(180deg, rgba(255,255,255,.4), rgba(255,255,255,.03) 34%, rgba(255,255,255,0));
   --vidrio-sombra: 0 14px 40px rgba(0,0,0,.17), 0 2px 6px rgba(0,0,0,.06);
-  /* botones: el vidrio de un botón del sistema es un tinte blanco con el
-     fondo aclarado por detrás y un resplandor interior, no un borde duro */
-  --btn-rgb: 255 255 255;
-  --btn-alfa: .5;
-  --btn-luz: 1.04;
-  --btn-brillo: linear-gradient(180deg, rgb(255 255 255 / .7), rgb(255 255 255 / .18) 62%, rgb(255 255 255 / .06));
-  --btn-filo: inset 0 .5px 0 rgb(255 255 255 / .95), inset 0 0 4px rgb(255 255 255 / .7);
-  --btn-sombra: 0 1px 3px rgb(0 0 0 / .1);
+  /* Botones: relleno plano, como los del sistema (imagen de referencia), no
+     vidrio. El de acción sí lleva el color elegido, con la letra en blanco. */
+  --btn-fondo:#E5E5EA; --btn-texto:#1C1C1E;
+  --acento-texto:#FFFFFF;
   /* texto */
   --text:#1C1C1E; --text-2:#3C3C43; --text-3:#8E8E93;
   /* acento y semánticos */
@@ -84,14 +80,10 @@
                    0 1px 0 rgba(255,255,255,.05);
     --vidrio-brillo: linear-gradient(180deg, rgba(255,255,255,.13), rgba(255,255,255,.02) 34%, rgba(255,255,255,0));
     --vidrio-sombra: 0 16px 44px rgba(0,0,0,.62), 0 2px 6px rgba(0,0,0,.4);
-    /* en oscuro el botón del sistema se ve claro: poco tinte y el fondo
-       aclarado de verdad, que es lo que le da el aspecto de vidrio */
-    --btn-rgb: 255 255 255;
-    --btn-alfa: .14;
-    --btn-luz: 1.6;
-    --btn-brillo: linear-gradient(180deg, rgb(255 255 255 / .26), rgb(255 255 255 / .04) 62%, rgb(255 255 255 / 0));
-    --btn-filo: inset 0 .5px 0 rgb(255 255 255 / .34), inset 0 0 4px rgb(250 250 250 / .28);
-    --btn-sombra: 0 2px 10px rgba(0,0,0,.3);
+    /* En oscuro, el gris del sistema y la letra en blanco: nada de vidrio, que
+       era lo que se veía sucio. */
+    --btn-fondo:#3A3A3C; --btn-texto:#FFFFFF;
+    --acento-texto:#FFFFFF;
     --text:#FFFFFF; --text-2:#EBEBF5; --text-3:#8E8E93;
     --accent:#0A84FF; --accent-2:#409CFF; --accent-soft:#0A2540;
     --green:#5BE47C; --green-soft:#122A19; --green-line:#30D158;
@@ -112,14 +104,10 @@ html[data-tema="dark"]{
                    0 1px 0 rgba(255,255,255,.05);
     --vidrio-brillo: linear-gradient(180deg, rgba(255,255,255,.13), rgba(255,255,255,.02) 34%, rgba(255,255,255,0));
     --vidrio-sombra: 0 16px 44px rgba(0,0,0,.62), 0 2px 6px rgba(0,0,0,.4);
-    /* en oscuro el botón del sistema se ve claro: poco tinte y el fondo
-       aclarado de verdad, que es lo que le da el aspecto de vidrio */
-    --btn-rgb: 255 255 255;
-    --btn-alfa: .14;
-    --btn-luz: 1.6;
-    --btn-brillo: linear-gradient(180deg, rgb(255 255 255 / .26), rgb(255 255 255 / .04) 62%, rgb(255 255 255 / 0));
-    --btn-filo: inset 0 .5px 0 rgb(255 255 255 / .34), inset 0 0 4px rgb(250 250 250 / .28);
-    --btn-sombra: 0 2px 10px rgba(0,0,0,.3);
+    /* En oscuro, el gris del sistema y la letra en blanco: nada de vidrio, que
+       era lo que se veía sucio. */
+    --btn-fondo:#3A3A3C; --btn-texto:#FFFFFF;
+    --acento-texto:#FFFFFF;
     --text:#FFFFFF; --text-2:#EBEBF5; --text-3:#8E8E93;
     --accent:#0A84FF; --accent-2:#409CFF; --accent-soft:#0A2540;
     --green:#5BE47C; --green-soft:#122A19; --green-line:#30D158;
@@ -308,12 +296,10 @@ section{margin-bottom:26px}
 .chips::-webkit-scrollbar{display:none}
 .chip{
   flex:0 0 auto; padding:9px 15px; border:0; border-radius:var(--r-pill);
-  background-color:rgb(var(--btn-rgb) / var(--btn-alfa));
-  background-image:var(--btn-brillo);
-  color:var(--text-2); font-size:14px; font-weight:600; transition:.2s;
-  box-shadow:var(--btn-filo), var(--btn-sombra)
+  background:var(--btn-fondo); color:var(--btn-texto);
+  font-size:14px; font-weight:600; transition:.2s
 }
-.chip[aria-selected=true]{background:var(--accent); color:#fff; box-shadow:0 4px 14px rgba(0,122,255,.35)}
+.chip[aria-selected=true]{background:var(--accent); color:var(--acento-texto)}
 .chip:active{transform:scale(.96)}
 .mtools{display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-top:2px}
 .mtools input{
@@ -322,15 +308,14 @@ section{margin-bottom:26px}
 }
 .iconbtn{
   border:0; border-radius:50%; width:38px; height:38px;
-  background-color:rgb(var(--btn-rgb) / var(--btn-alfa));
-  background-image:var(--btn-brillo);
-  -webkit-backdrop-filter:blur(16px) saturate(1.4) brightness(var(--btn-luz));
-  backdrop-filter:blur(16px) saturate(1.4) brightness(var(--btn-luz));
-  box-shadow:var(--btn-filo), var(--btn-sombra);
-  display:grid; place-items:center; color:var(--text-2); font-size:15px; flex:0 0 auto;
-  transition:.2s
+  background:var(--btn-fondo); color:var(--btn-texto);
+  display:grid; place-items:center; font-size:15px; flex:0 0 auto; transition:.2s
 }
-.iconbtn:hover{color:var(--red); background:var(--red-soft)}
+.iconbtn:hover{background:color-mix(in srgb, var(--btn-fondo) 78%, var(--text))}
+/* el rojo es solo para los que borran: antes lo heredaba también el engranaje */
+.iconbtn[aria-label^="Eliminar"]:hover,.iconbtn[aria-label="Borrar"]:hover{
+  color:var(--red); background:var(--red-soft)
+}
 .iconbtn:active{transform:scale(.92)}
 
 /* ── tarjetas de crédito ──────────────────────────────────────────────── */
@@ -376,12 +361,10 @@ section{margin-bottom:26px}
 .bmeta{display:flex; align-items:center; gap:8px; margin-top:12px; flex-wrap:wrap}
 .chipmin{
   border:0; border-radius:var(--r-pill); padding:7px 13px;
-  background-color:rgb(var(--btn-rgb) / var(--btn-alfa));
-  background-image:var(--btn-brillo);
-  font-size:12.5px; font-weight:600; color:var(--text-2); transition:.2s;
-  box-shadow:var(--btn-filo)
+  background:var(--btn-fondo); color:var(--btn-texto);
+  font-size:12.5px; font-weight:600; transition:.2s
 }
-.chipmin[aria-pressed=true]{background:var(--accent); color:#fff}
+.chipmin[aria-pressed=true]{background:var(--accent); color:var(--acento-texto)}
 .chipmin:active{transform:scale(.95)}
 .mini{
   font-size:15px; font-weight:600; padding:9px 11px; border:1px solid var(--border);
@@ -462,26 +445,17 @@ table.mx tr.tot td:first-child{background:var(--surface-2)}
 .actions{display:flex; gap:10px; flex-wrap:wrap; align-items:center}
 .pbtn{
   padding:11px 18px; border:0; border-radius:var(--r-pill);
-  background-color:rgb(var(--btn-rgb) / var(--btn-alfa));
-  background-image:var(--btn-brillo);
-  font-size:14.5px; font-weight:600; color:var(--accent); transition:.2s;
-  -webkit-backdrop-filter:blur(18px) saturate(1.4) brightness(var(--btn-luz));
-  backdrop-filter:blur(18px) saturate(1.4) brightness(var(--btn-luz));
-  box-shadow:var(--btn-filo), var(--btn-sombra)
+  background:var(--btn-fondo); color:var(--btn-texto);
+  font-size:14.5px; font-weight:600; transition:.2s
 }
-.pbtn:hover{background-color:rgb(var(--btn-rgb) / calc(var(--btn-alfa) + .12))}
+.pbtn:hover{background:color-mix(in srgb, var(--btn-fondo) 82%, var(--text))}
 .pbtn:active{transform:scale(.97)}
 .pbtn.solido{
-  /* el de acción sí lleva el acento, pero con el brillo del vidrio encima */
-  background:var(--accent); color:#fff;
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.45),
-             0 6px 18px color-mix(in srgb, var(--accent) 30%, transparent)
+  /* el de acción lleva el color elegido en Ajustes, con la letra en blanco */
+  background:var(--accent); color:var(--acento-texto)
 }
 .pbtn.solido:hover{background:var(--accent-2)}
 .pbtn[disabled]{opacity:.45; cursor:default; transform:none}
-/* el botón que vive dentro del campo del chat no vuelve a desenfocar: ya está
-   sobre vidrio, y anidar dos desenfoques cuesta caro sin ganar nada */
-.chat-in .pbtn{-webkit-backdrop-filter:none; backdrop-filter:none}
 .note{font-size:13.5px; line-height:1.5; color:var(--text-3); margin:0 0 14px; max-width:64ch}
 .alert{
   background:var(--accent-soft); color:var(--text); border-radius:var(--r);
@@ -555,7 +529,7 @@ body.solo-lectura #aviso{pointer-events:auto}
   max-width:90%; padding:13px 16px; border-radius:20px; font-size:15px; line-height:1.48;
   white-space:pre-wrap; word-break:break-word; animation:pop .28s cubic-bezier(.22,1,.36,1) both
 }
-.bub.yo{align-self:flex-end; background:var(--accent); color:#fff; border-bottom-right-radius:6px}
+.bub.yo{align-self:flex-end; background:var(--accent); color:var(--acento-texto); border-bottom-right-radius:6px}
 .bub.ia{align-self:flex-start; background:var(--surface); border-bottom-left-radius:6px; box-shadow:var(--sh-1)}
 .bub.ia strong{font-weight:700}
 .bub .herramientas{
@@ -625,6 +599,50 @@ body.solo-lectura #aviso{pointer-events:auto}
 /* la fila que lleva el deslizador necesita el ancho completo */
 .setrow:has(.rango){flex-wrap:wrap; row-gap:10px}
 .setrow:has(.rango) .setk{flex:1 1 100%}
+
+/* ── selector de color ───────────────────────────────────────────────────
+   Tira de muestras como la del sistema: la elegida lleva un anillo con un
+   hueco y su nombre debajo, así que la fila crece sola para que quepa. */
+.paleta{display:flex; gap:9px; flex-wrap:wrap; align-items:flex-start; padding-bottom:18px}
+.muestra{
+  position:relative; border:0; background:none; padding:0;
+  display:flex; align-items:center; justify-content:center;
+  font-size:11.5px; font-weight:600; color:var(--text-2)
+}
+.muestra .punto{
+  width:28px; height:28px; border-radius:50%; display:block; background:var(--c);
+  box-shadow:inset 0 0 0 .5px rgba(0,0,0,.16), 0 1px 2px rgba(0,0,0,.16);
+  transition:transform .2s ease
+}
+.muestra[aria-pressed=true] .punto{
+  box-shadow:inset 0 0 0 .5px rgba(0,0,0,.16), 0 1px 2px rgba(0,0,0,.16),
+             0 0 0 2px var(--bg), 0 0 0 4px var(--a, var(--c))
+}
+/* El nombre sale del flujo: si no, la muestra elegida se ensancha y la tira
+   se parte en dos filas en el teléfono. */
+.muestra .nombre{
+  display:none; position:absolute; top:calc(100% + 5px); left:50%;
+  transform:translateX(-50%); white-space:nowrap
+}
+.muestra[aria-pressed=true] .nombre{display:block}
+.muestra:active .punto{transform:scale(.92)}
+.setrow:has(.paleta){flex-wrap:wrap; row-gap:8px}
+.setrow:has(.paleta) .setk{flex:1 1 100%}
+
+/* el selector de resalte: el punto de color pegado al desplegable */
+.setv select{
+  -webkit-appearance:none; appearance:none; border:0; background:transparent;
+  font-size:15px; font-weight:600; color:var(--text-2); padding:4px 22px 4px 2px;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'><path d='M2.5 4.5 6 8l3.5-3.5' fill='none' stroke='%238E8E93' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+  background-repeat:no-repeat; background-position:right 2px center
+}
+.punto-resalte{
+  width:16px; height:16px; border-radius:50%; display:block; flex:0 0 auto;
+  background:var(--c, var(--accent));
+  box-shadow:inset 0 0 0 .5px rgba(0,0,0,.16)
+}
+/* el texto que seleccionas se pinta con el color de resalte elegido */
+::selection{background:color-mix(in srgb, var(--resalte, var(--accent)) 45%, transparent)}
 .seg{
   display:flex; gap:2px; padding:3px; border-radius:var(--r-sm);
   background-color:color-mix(in srgb, var(--surface-2) 55%, transparent);
@@ -683,7 +701,8 @@ body.solo-lectura #aviso{pointer-events:auto}
         --text-2:#222; --text-3:#666; --border:#bbb; --border-2:#ddd; --sh-1:none; --sh-2:none;
         --vidrio-rgb:255 255 255; --vidrio-alfa:1; --vidrio-filtro:none;
         --vidrio-brillo:none; --vidrio-filo:none; --vidrio-sombra:none;
-        --btn-rgb:255 255 255; --btn-alfa:1; --btn-luz:1; --btn-filo:none; --btn-sombra:none}
+        --btn-fondo:#FFFFFF; --btn-texto:#000000; --acento-texto:#FFFFFF;
+        --resalte:transparent}
   .tabbar,.fab,.addbtn,.actions,.more,.tick,.iconbtn,.mtools,.chips,.sync,.quick,
   details.mx > summary,.chat,.limbox::before{display:none !important}
   body{background:#fff; padding:0}
@@ -1519,6 +1538,8 @@ function viewChat() {
 
 function viewAjustes() {
   const t = localStorage.getItem("cofre_tema") || "sistema";
+  const oscuro = esOscuro();
+  const ac = acentoElegido(), res = resalteElegido();
   const n = k => state[k].length;
   return `
   <section data-anim>
@@ -1535,6 +1556,27 @@ function viewAjustes() {
         <span class="setk">Vidrio<span class="sub">Cuánto desenfoca lo que pasa por detrás. En 0 queda opaco; arriba del todo, casi solo cristal.</span></span>
         <input class="rango" type="range" min="0" max="100" step="5" value="${vidrioN()}"
                data-vidrio aria-label="Intensidad del vidrio" style="--pct:${vidrioN()}%">
+      </div>
+      <div class="setrow">
+        <span class="setk">Color<span class="sub">Tiñe los botones de acción, las pestañas, las barras y la burbuja del chat.</span></span>
+        <div class="paleta">
+          ${ORDEN_ACENTOS.map(k => {
+            const c = ACENTOS[k][oscuro ? "d" : "l"][0];
+            return `<button class="muestra" data-acento="${k}" aria-pressed="${ac === k}"
+                      aria-label="${ACENTOS[k].nombre}" style="--c:${k === "multicolor" ? ARCOIRIS : c};--a:${c}">
+                      <span class="punto"></span><span class="nombre">${ACENTOS[k].nombre}</span>
+                    </button>`;
+          }).join("")}
+        </div>
+      </div>
+      <div class="setrow">
+        <span class="setk">Color de resalte<span class="sub">El fondo de lo que seleccionas con el dedo.</span></span>
+        <span class="setv">
+          <i class="punto-resalte" style="--c:${ACENTOS[res][oscuro ? "d" : "l"][0]}"></i>
+          <select data-resalte-select aria-label="Color de resalte">
+            ${ORDEN_ACENTOS.map(k => `<option value="${k}"${res === k ? " selected" : ""}>${ACENTOS[k].nombre}</option>`).join("")}
+          </select>
+        </span>
       </div>
     </div>
   </section>
@@ -2018,6 +2060,12 @@ $("#app").addEventListener("input", e => {
     clearTimeout(tVidrio); tVidrio = setTimeout(pintarVidrio, 150);
     return;
   }
+  /* el color y el resalte no son datos del servidor: viven en el dispositivo */
+  if (d.resalteSelect !== undefined) {
+    localStorage.setItem("cofre_resalte", el.value);
+    aplicarAcento(); render();
+    return;
+  }
   if (d.meta === "ingreso") state.ingreso = parsear(el.value) ?? 0;
   else if (d.meta === "ingresoProximo") state.ingresoProximo = parsear(el.value) ?? 0;
   else if (d.meta === "usdGtq") state.usdGtq = parsear(el.value) ?? 0;
@@ -2248,6 +2296,9 @@ $("#app").addEventListener("click", async e => {
       localStorage.setItem("cofre_tema", d.temaSel); aplicarTema(); render();
     } else if (d.action === "usar-sugerido") {
       setLimite(cascada().limiteSugerido); programarGuardado(); render();
+    } else if (d.acento) {
+      localStorage.setItem("cofre_acento", d.acento);
+      aplicarAcento(); render();
     } else if (d.tab) {
       cambiarTab(d.tab);
     } else if (d.action === "reintentar") {
@@ -2300,6 +2351,52 @@ function siguienteMes(label) {
   i++; if (i > 11) { i = 0; anio++; }
   return MESES[i] + " " + anio;
 }
+/* ── color del acento ───────────────────────────────────────────────────
+   El mismo juego del sistema. Cada color trae sus valores para claro y
+   oscuro y, además, el color de la letra que va encima del relleno: en
+   amarillo el blanco no se lee, así que ahí va oscura. "Multicolor" es el
+   azul de siempre. */
+const ACENTOS = {
+  multicolor:{ nombre:"Multicolor", l:["#007AFF","#0062CC","#E6F0FF","#FFFFFF"], d:["#0A84FF","#409CFF","#0A2540","#FFFFFF"] },
+  azul:      { nombre:"Azul",       l:["#007AFF","#0062CC","#E6F0FF","#FFFFFF"], d:["#0A84FF","#409CFF","#0A2540","#FFFFFF"] },
+  morado:    { nombre:"Morado",     l:["#8944AB","#6E3389","#F5E9FA","#FFFFFF"], d:["#BF5AF2","#A34FD6","#2A1436","#FFFFFF"] },
+  rosa:      { nombre:"Rosa",       l:["#D6357B","#AE2963","#FCE9F1","#FFFFFF"], d:["#FF375F","#FF6B8A","#33101D","#FFFFFF"] },
+  rojo:      { nombre:"Rojo",       l:["#D70015","#B00011","#FFE8E6","#FFFFFF"], d:["#FF453A","#FF6B60","#331512","#FFFFFF"] },
+  naranja:   { nombre:"Naranja",    l:["#C25E00","#9E4C00","#FFF0E0","#FFFFFF"], d:["#FF9F0A","#FFB340","#33240E","#1C1C1E"] },
+  amarillo:  { nombre:"Amarillo",   l:["#A67C00","#8A6600","#FFF8E0","#FFFFFF"], d:["#FFD60A","#FFE04D","#332C0E","#1C1C1E"] },
+  verde:     { nombre:"Verde",      l:["#248A3D","#1C6E31","#E3F6E7","#FFFFFF"], d:["#30D158","#5BE47C","#122A19","#1C1C1E"] },
+  gris:      { nombre:"Gris",       l:["#6C6C70","#545458","#EFEFF2","#FFFFFF"], d:["#98989D","#AEAEB2","#2C2C2E","#1C1C1E"] },
+};
+const ORDEN_ACENTOS = ["multicolor","azul","morado","rosa","rojo","naranja","amarillo","verde","gris"];
+/* la muestra de "Multicolor" es el arcoíris, como en el sistema */
+const ARCOIRIS = "conic-gradient(from 0deg,#FF3B30,#FF9500,#FFD60A,#34C759,#00C7BE,#0A84FF,#5856D6,#BF5AF2,#FF375F,#FF3B30)";
+
+function esOscuro() {
+  const r = document.documentElement;
+  return r.dataset.tema === "dark" ||
+    (r.dataset.tema !== "light" && matchMedia("(prefers-color-scheme:dark)").matches);
+}
+function acentoElegido() {
+  const k = localStorage.getItem("cofre_acento");
+  return ACENTOS[k] ? k : "multicolor";
+}
+function resalteElegido() {
+  const k = localStorage.getItem("cofre_resalte");
+  return ACENTOS[k] ? k : "multicolor";
+}
+/* Un solo sitio decide el color de todo: botones de acción, pestañas, barras,
+   la burbuja del chat y el texto que seleccionas. */
+function aplicarAcento(oscuro) {
+  if (oscuro === undefined) oscuro = esOscuro();
+  const r = document.documentElement.style;
+  const a = ACENTOS[acentoElegido()][oscuro ? "d" : "l"];
+  r.setProperty("--accent", a[0]);
+  r.setProperty("--accent-2", a[1]);
+  r.setProperty("--accent-soft", a[2]);
+  r.setProperty("--acento-texto", a[3]);
+  r.setProperty("--resalte", ACENTOS[resalteElegido()][oscuro ? "d" : "l"][0]);
+}
+
 /* ── intensidad del vidrio ──────────────────────────────────────────────
    0 lo deja opaco del todo; 100 lo lleva al extremo contrario, casi solo
    cristal. Se mueve desde Ajustes y se guarda en este dispositivo. */
@@ -2309,9 +2406,7 @@ function vidrioN() {
 }
 function aplicarVidrio(oscuro) {
   const r = document.documentElement;
-  if (oscuro === undefined)
-    oscuro = r.dataset.tema === "dark" ||
-      (r.dataset.tema !== "light" && matchMedia("(prefers-color-scheme:dark)").matches);
+  if (oscuro === undefined) oscuro = esOscuro();
   const n = vidrioN();
   r.style.setProperty("--vidrio-alfa", (oscuro ? .90 - n * .0063 : .98 - n * .006).toFixed(3));
   r.style.setProperty("--vidrio-filtro",
@@ -2328,6 +2423,7 @@ function aplicarTema() {
   const oscuro = t === "oscuro" || (t === "sistema" && matchMedia("(prefers-color-scheme:dark)").matches);
   document.querySelector('meta[name="theme-color"]').content = oscuro ? "#000000" : "#F2F2F7";
   aplicarVidrio(oscuro);
+  aplicarAcento(oscuro);
 }
 matchMedia("(prefers-color-scheme:dark)").addEventListener("change", aplicarTema);
 /* al girar el teléfono o cambiar de tamaño, la cápsula y los mapas de la
