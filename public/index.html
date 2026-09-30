@@ -37,14 +37,17 @@
   color-scheme:light dark;
   /* superficies */
   --bg:#F2F2F7; --surface:#FFFFFF; --surface-2:#F2F2F7; --surface-3:#E9E9EE;
-  /* vidrio: una sola receta para todo lo que flota sobre el contenido.
-     Más desenfoque y menos opacidad = más se nota que es vidrio y no una
-     caja gris. Las tarjetas se quedan planas a propósito: ahí manda el dato. */
-  --vidrio:rgba(255,255,255,.55);
-  --vidrio-blur:saturate(200%) blur(40px);
-  --vidrio-brillo:linear-gradient(180deg, rgba(255,255,255,.55), rgba(255,255,255,.06) 60%, rgba(255,255,255,0));
-  --vidrio-filo:inset 0 1px 0 rgba(255,255,255,.95), inset 0 0 0 .5px rgba(255,255,255,.5);
-  --vidrio-sombra:0 12px 40px rgba(0,0,0,.16), 0 2px 8px rgba(0,0,0,.07);
+  /* Vidrio del sistema: tinte neutro, filo de luz de medio píxel, brillo muy
+     suave arriba y sombra ancha. Se lee como vidrio por el filo y la sombra,
+     no por ser blanco. La transparencia y el desenfoque los mueve el control
+     de Ajustes; aquí solo va el color y el carácter del material. */
+  --vidrio-rgb: 249 249 251;
+  --vidrio-alfa: .56;
+  --vidrio-filtro: saturate(170%) blur(35px);
+  --vidrio-filo: inset 0 .5px 0 rgba(255,255,255,1), inset 0 0 0 .5px rgba(255,255,255,.55),
+                 0 .5px 0 rgba(255,255,255,.5);
+  --vidrio-brillo: linear-gradient(180deg, rgba(255,255,255,.4), rgba(255,255,255,.03) 34%, rgba(255,255,255,0));
+  --vidrio-sombra: 0 14px 40px rgba(0,0,0,.17), 0 2px 6px rgba(0,0,0,.06);
   /* texto */
   --text:#1C1C1E; --text-2:#3C3C43; --text-3:#8E8E93;
   /* acento y semánticos */
@@ -65,11 +68,14 @@
 }
 @media (prefers-color-scheme:dark){ html:not([data-tema="light"]){
     --bg:#000000; --surface:#1C1C1E; --surface-2:#2C2C2E; --surface-3:#3A3A3C;
-    --vidrio:rgba(30,30,34,.46);
-    --vidrio-blur:saturate(200%) blur(44px);
-    --vidrio-brillo:linear-gradient(180deg, rgba(255,255,255,.14), rgba(255,255,255,.02) 60%, rgba(255,255,255,0));
-    --vidrio-filo:inset 0 1px 0 rgba(255,255,255,.16), inset 0 0 0 .5px rgba(255,255,255,.07);
-    --vidrio-sombra:0 14px 46px rgba(0,0,0,.55), 0 2px 8px rgba(0,0,0,.35);
+    /* el tinte es gris humo, como los módulos del Centro de Control */
+    --vidrio-rgb: 70 70 76;
+    --vidrio-alfa: .46;
+    --vidrio-filtro: saturate(170%) blur(35px);
+    --vidrio-filo: inset 0 .5px 0 rgba(255,255,255,.3), inset 0 0 0 .5px rgba(255,255,255,.11),
+                   0 1px 0 rgba(255,255,255,.05);
+    --vidrio-brillo: linear-gradient(180deg, rgba(255,255,255,.13), rgba(255,255,255,.02) 34%, rgba(255,255,255,0));
+    --vidrio-sombra: 0 16px 44px rgba(0,0,0,.62), 0 2px 6px rgba(0,0,0,.4);
     --text:#FFFFFF; --text-2:#EBEBF5; --text-3:#8E8E93;
     --accent:#0A84FF; --accent-2:#409CFF; --accent-soft:#0A2540;
     --green:#5BE47C; --green-soft:#122A19; --green-line:#30D158;
@@ -82,11 +88,14 @@
   }}
 html[data-tema="dark"]{
     --bg:#000000; --surface:#1C1C1E; --surface-2:#2C2C2E; --surface-3:#3A3A3C;
-    --vidrio:rgba(30,30,34,.46);
-    --vidrio-blur:saturate(200%) blur(44px);
-    --vidrio-brillo:linear-gradient(180deg, rgba(255,255,255,.14), rgba(255,255,255,.02) 60%, rgba(255,255,255,0));
-    --vidrio-filo:inset 0 1px 0 rgba(255,255,255,.16), inset 0 0 0 .5px rgba(255,255,255,.07);
-    --vidrio-sombra:0 14px 46px rgba(0,0,0,.55), 0 2px 8px rgba(0,0,0,.35);
+    /* el tinte es gris humo, como los módulos del Centro de Control */
+    --vidrio-rgb: 70 70 76;
+    --vidrio-alfa: .46;
+    --vidrio-filtro: saturate(170%) blur(35px);
+    --vidrio-filo: inset 0 .5px 0 rgba(255,255,255,.3), inset 0 0 0 .5px rgba(255,255,255,.11),
+                   0 1px 0 rgba(255,255,255,.05);
+    --vidrio-brillo: linear-gradient(180deg, rgba(255,255,255,.13), rgba(255,255,255,.02) 34%, rgba(255,255,255,0));
+    --vidrio-sombra: 0 16px 44px rgba(0,0,0,.62), 0 2px 6px rgba(0,0,0,.4);
     --text:#FFFFFF; --text-2:#EBEBF5; --text-3:#8E8E93;
     --accent:#0A84FF; --accent-2:#409CFF; --accent-soft:#0A2540;
     --green:#5BE47C; --green-soft:#122A19; --green-line:#30D158;
@@ -128,8 +137,8 @@ small,.small{font-size:12.5px; color:var(--text-3)}
 /* ── cabecera ─────────────────────────────────────────────────────────── */
 .masthead{
   position:sticky; top:0; z-index:20;
-  background-color:var(--vidrio); background-image:var(--vidrio-brillo);
-  -webkit-backdrop-filter:var(--vidrio-blur); backdrop-filter:var(--vidrio-blur);
+  background-color:rgb(var(--vidrio-rgb) / var(--vidrio-alfa)); background-image:var(--vidrio-brillo);
+  -webkit-backdrop-filter:var(--vidrio-filtro); backdrop-filter:var(--vidrio-filtro);
   box-shadow:var(--vidrio-filo); border-bottom:.5px solid var(--border);
   padding:12px var(--pad) 14px;
   padding-top:calc(12px + env(safe-area-inset-top));
@@ -416,7 +425,7 @@ table.mx tr.tot td:first-child{background:var(--surface-2)}
   padding:12px 18px; border:0; border-radius:var(--r-pill);
   background-color:color-mix(in srgb, var(--surface) 62%, transparent);
   background-image:var(--vidrio-brillo);
-  -webkit-backdrop-filter:var(--vidrio-blur); backdrop-filter:var(--vidrio-blur);
+  -webkit-backdrop-filter:var(--vidrio-filtro); backdrop-filter:var(--vidrio-filtro);
   font-size:14.5px; font-weight:600; color:var(--accent); transition:.2s
 }
 .pbtn:hover{background-color:var(--accent-soft)}
@@ -467,8 +476,8 @@ body.solo-lectura #aviso{pointer-events:auto}
   position:fixed; z-index:30; left:50%; transform:translateX(-50%);
   bottom:calc(12px + env(safe-area-inset-bottom));
   width:min(94vw, 470px);
-  background-color:var(--vidrio); background-image:var(--vidrio-brillo);
-  -webkit-backdrop-filter:var(--vidrio-blur); backdrop-filter:var(--vidrio-blur);
+  background-color:rgb(var(--vidrio-rgb) / var(--vidrio-alfa)); background-image:var(--vidrio-brillo);
+  -webkit-backdrop-filter:var(--vidrio-filtro); backdrop-filter:var(--vidrio-filtro);
   border-radius:var(--r-pill);
   box-shadow:var(--vidrio-sombra), var(--vidrio-filo);
   padding:5px
@@ -518,8 +527,8 @@ body.solo-lectura #aviso{pointer-events:auto}
 .chat-in{
   position:sticky; bottom:calc(94px + env(safe-area-inset-bottom)); z-index:6;
   display:flex; gap:8px; padding:9px; margin-top:8px;
-  background-color:var(--vidrio); background-image:var(--vidrio-brillo);
-  -webkit-backdrop-filter:var(--vidrio-blur); backdrop-filter:var(--vidrio-blur);
+  background-color:rgb(var(--vidrio-rgb) / var(--vidrio-alfa)); background-image:var(--vidrio-brillo);
+  -webkit-backdrop-filter:var(--vidrio-filtro); backdrop-filter:var(--vidrio-filtro);
   border:0; border-radius:var(--r-pill); box-shadow:var(--vidrio-sombra), var(--vidrio-filo)
 }
 .chat-in input{flex:1; min-width:0; font-size:16px; padding:11px 15px; border:0; background:transparent}
@@ -545,6 +554,33 @@ body.solo-lectura #aviso{pointer-events:auto}
 .setk{font-size:15px; font-weight:500; min-width:0}
 .setk .sub{display:block; font-size:12.5px; color:var(--text-3); margin-top:2px}
 .setv{font-size:15px; font-weight:600; color:var(--text-2); display:flex; align-items:center; gap:7px}
+/* ── deslizador (intensidad del vidrio) ───────────────────────────────────
+   Barra gruesa con relleno, como los del Centro de Control. El relleno se
+   pinta con un degradado duro en --pct, que mueve el propio control. */
+.rango{
+  -webkit-appearance:none; appearance:none; flex:1 1 150px; min-width:130px;
+  height:30px; margin:0; background:transparent; cursor:pointer
+}
+.rango::-webkit-slider-runnable-track{
+  height:30px; border-radius:var(--r-pill);
+  background:linear-gradient(90deg, var(--text) var(--pct,60%),
+             color-mix(in srgb, var(--surface-3) 78%, transparent) var(--pct,60%));
+  box-shadow:inset 0 0 0 .5px var(--border-2)
+}
+.rango::-webkit-slider-thumb{
+  -webkit-appearance:none; width:26px; height:26px; margin-top:2px; border-radius:50%;
+  background:#fff; box-shadow:0 1px 4px rgba(0,0,0,.3), inset 0 0 0 .5px rgba(0,0,0,.06)
+}
+.rango::-moz-range-track{
+  height:30px; border-radius:var(--r-pill);
+  background:color-mix(in srgb, var(--surface-3) 78%, transparent)
+}
+.rango::-moz-range-progress{height:30px; border-radius:var(--r-pill); background:var(--text)}
+.rango::-moz-range-thumb{width:26px; height:26px; border:0; border-radius:50%; background:#fff}
+.rango:focus-visible{outline:2.5px solid var(--accent); outline-offset:4px; border-radius:var(--r-pill)}
+/* la fila que lleva el deslizador necesita el ancho completo */
+.setrow:has(.rango){flex-wrap:wrap; row-gap:10px}
+.setrow:has(.rango) .setk{flex:1 1 100%}
 .seg{
   display:flex; gap:2px; padding:3px; border-radius:var(--r-sm);
   background-color:color-mix(in srgb, var(--surface-2) 55%, transparent);
@@ -602,7 +638,8 @@ body.solo-lectura #aviso{pointer-events:auto}
 @media print{
   :root{--bg:#fff; --surface:#fff; --surface-2:#fff; --surface-3:#eee; --text:#000;
         --text-2:#222; --text-3:#666; --border:#bbb; --border-2:#ddd; --sh-1:none; --sh-2:none;
-        --vidrio:#fff; --vidrio-blur:none; --vidrio-brillo:none; --vidrio-filo:none; --vidrio-sombra:none}
+        --vidrio-rgb:255 255 255; --vidrio-alfa:1; --vidrio-filtro:none;
+        --vidrio-brillo:none; --vidrio-filo:none; --vidrio-sombra:none}
   .tabbar,.fab,.addbtn,.actions,.more,.tick,.iconbtn,.mtools,.chips,.sync,.quick,
   details.mx > summary,.chat,.limbox::before{display:none !important}
   body{background:#fff; padding:0}
@@ -1450,6 +1487,11 @@ function viewAjustes() {
             `<button data-tema-sel="${k}" aria-pressed="${t === k}">${txt}</button>`).join("")}
         </span>
       </div>
+      <div class="setrow">
+        <span class="setk">Vidrio<span class="sub">Cuánto desenfoca lo que pasa por detrás. En 0 queda opaco; arriba del todo, casi solo cristal.</span></span>
+        <input class="rango" type="range" min="0" max="100" step="5" value="${vidrioN()}"
+               data-vidrio aria-label="Intensidad del vidrio" style="--pct:${vidrioN()}%">
+      </div>
     </div>
   </section>
 
@@ -1811,6 +1853,13 @@ function render() {
 /* ─────────────────────────── eventos ─────────────────────────── */
 $("#app").addEventListener("input", e => {
   const el = e.target, d = el.dataset;
+  /* el vidrio no es un dato del servidor: se guarda aquí y se aplica en vivo */
+  if (d.vidrio !== undefined) {
+    localStorage.setItem("cofre_vidrio", el.value);
+    el.style.setProperty("--pct", el.value + "%");
+    aplicarVidrio();
+    return;
+  }
   if (d.meta === "ingreso") state.ingreso = parsear(el.value) ?? 0;
   else if (d.meta === "ingresoProximo") state.ingresoProximo = parsear(el.value) ?? 0;
   else if (d.meta === "usdGtq") state.usdGtq = parsear(el.value) ?? 0;
@@ -2093,6 +2142,23 @@ function siguienteMes(label) {
   i++; if (i > 11) { i = 0; anio++; }
   return MESES[i] + " " + anio;
 }
+/* ── intensidad del vidrio ──────────────────────────────────────────────
+   0 lo deja opaco del todo; 100 lo lleva al extremo contrario, casi solo
+   cristal. Se mueve desde Ajustes y se guarda en este dispositivo. */
+function vidrioN() {
+  const v = parseInt(localStorage.getItem("cofre_vidrio"), 10);
+  return Number.isFinite(v) ? Math.min(100, Math.max(0, v)) : 70;
+}
+function aplicarVidrio(oscuro) {
+  const r = document.documentElement;
+  if (oscuro === undefined)
+    oscuro = r.dataset.tema === "dark" ||
+      (r.dataset.tema !== "light" && matchMedia("(prefers-color-scheme:dark)").matches);
+  const n = vidrioN();
+  r.style.setProperty("--vidrio-alfa", (oscuro ? .90 - n * .0063 : .98 - n * .006).toFixed(3));
+  r.style.setProperty("--vidrio-filtro",
+    n === 0 ? "none" : "saturate(" + (100 + n) + "%) blur(" + Math.round(n * .5) + "px)");
+}
 /* tema: el del sistema por omisión, o forzado desde Ajustes */
 function aplicarTema() {
   const t = localStorage.getItem("cofre_tema") || "sistema";
@@ -2103,6 +2169,7 @@ function aplicarTema() {
   /* la barra del navegador acompaña al tema elegido */
   const oscuro = t === "oscuro" || (t === "sistema" && matchMedia("(prefers-color-scheme:dark)").matches);
   document.querySelector('meta[name="theme-color"]').content = oscuro ? "#000000" : "#F2F2F7";
+  aplicarVidrio(oscuro);
 }
 matchMedia("(prefers-color-scheme:dark)").addEventListener("change", aplicarTema);
 function descargar(nombre, texto, tipo) {
