@@ -1,7 +1,7 @@
 /* Cofre — service worker.
    Deja la app instalable y funcionando sin señal. La API nunca se cachea:
    los números siempre se piden al servidor. */
-const CACHE = "cofre-v1";
+const CACHE = "cofre-v2";
 const CASCARON = ["/", "/manifest.webmanifest", "/icon-192.png", "/icon-512.png", "/icon-maskable-512.png"];
 
 self.addEventListener("install", (e) => {
@@ -28,16 +28,22 @@ self.addEventListener("fetch", (e) => {
   /* la API y el MCP siempre van a la red */
   if (url.pathname.startsWith("/api/") || url.pathname.startsWith("/mcp")) return;
 
-  /* red primero (para recibir mejoras al instante) y caché cuando no hay señal */
-  e.respondWith(
-    fetch(pet)
-      .then((resp) => {
-        if (resp && resp.ok && resp.type === "basic") {
-          const copia = resp.clone();
-          caches.open(CACHE).then((c) => c.put(pet, copia)).catch(() => {});
-        }
-        return resp;
-      })
-      .catch(() => caches.match(pet).then((r) => r || caches.match("/")))
-  );
+  /* Se guarda sin la barra de consulta: /?v=123 y /?v=456 son la misma página.
+     Si no, la caché acabaría con una copia idéntica por cada visita, y al
+     buscar sin señal no coincidiría nada. */
+  const llave = url.origin + url.pathname;
+
+  /* red primero (para recibir mejoras al instante) y caché cuando no hay señal.
+     Nunca se resuelve a undefined: eso sería una respuesta inválida y el
+     navegador lo reporta como fallo de red. */
+  e.respondWith((async () => {
+    const c = await caches.open(CACHE);
+    try {
+      const resp = await fetch(pet);
+      if (resp && resp.ok && resp.type === "basic") c.put(llave, resp.clone()).catch(() => {});
+      return resp;
+    } catch {
+      return (await c.match(llave)) || (await c.match("/")) || Response.error();
+    }
+  })());
 });

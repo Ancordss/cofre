@@ -1588,10 +1588,21 @@ Bun.serve({
 
     const rel = path === "/" ? "/index.html" : path;
     const file = Bun.file(join(PUBLIC_DIR, rel.replace(/\.\./g, "")));
-    if (await file.exists())
+    if (await file.exists()) {
+      /* el manifiesto y el service worker necesitan su tipo exacto: con
+         octet-stream el navegador rechaza el PWA y no deja instalarlo */
+      const tipos = {
+        "/manifest.webmanifest": "application/manifest+json",
+        "/sw.js": "text/javascript; charset=utf-8",
+      };
+      const fresco = rel === "/index.html" || rel === "/sw.js" || rel === "/manifest.webmanifest";
       return new Response(file, {
-        headers: { "cache-control": rel === "/index.html" ? "no-cache" : "public, max-age=3600" },
+        headers: {
+          ...(tipos[rel] ? { "content-type": tipos[rel] } : {}),
+          "cache-control": fresco ? "no-cache" : "public, max-age=3600",
+        },
       });
+    }
     return new Response("No encontrado", { status: 404 });
   },
 });
