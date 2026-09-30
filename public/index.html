@@ -43,7 +43,7 @@
      de Ajustes; aquí solo va el color y el carácter del material. */
   --vidrio-rgb: 242 242 247;
   --vidrio-alfa: .56;
-  --vidrio-filtro: saturate(170%) blur(35px);
+  --vidrio-filtro: saturate(170%) blur(42px);
   --vidrio-filo: inset 0 .5px 0 rgba(255,255,255,1), inset 0 0 0 .5px rgba(255,255,255,.55),
                  0 .5px 0 rgba(255,255,255,.5);
   --vidrio-brillo: linear-gradient(180deg, rgba(255,255,255,.4), rgba(255,255,255,.03) 34%, rgba(255,255,255,0));
@@ -80,7 +80,7 @@
        filo, no por una capa gris encima */
     --vidrio-rgb: 0 0 0;
     --vidrio-alfa: .46;
-    --vidrio-filtro: saturate(170%) blur(35px);
+    --vidrio-filtro: saturate(170%) blur(42px);
     --vidrio-filo: inset 0 .5px 0 rgba(255,255,255,.3), inset 0 0 0 .5px rgba(255,255,255,.11),
                    0 1px 0 rgba(255,255,255,.05);
     --vidrio-brillo: linear-gradient(180deg, rgba(255,255,255,.13), rgba(255,255,255,.02) 34%, rgba(255,255,255,0));
@@ -107,7 +107,7 @@ html[data-tema="dark"]{
        filo, no por una capa gris encima */
     --vidrio-rgb: 0 0 0;
     --vidrio-alfa: .46;
-    --vidrio-filtro: saturate(170%) blur(35px);
+    --vidrio-filtro: saturate(170%) blur(42px);
     --vidrio-filo: inset 0 .5px 0 rgba(255,255,255,.3), inset 0 0 0 .5px rgba(255,255,255,.11),
                    0 1px 0 rgba(255,255,255,.05);
     --vidrio-brillo: linear-gradient(180deg, rgba(255,255,255,.13), rgba(255,255,255,.02) 34%, rgba(255,255,255,0));
@@ -2020,7 +2020,7 @@ function pintarVidrio() {
     const filtro = filtroDeLente(w, h, Math.min(Math.round(h / 2), Math.round(radioDe(el))), prof, fuerza, ab);
     /* la cabecera apaga lo que tiene detrás para camuflarse sin volverse opaca */
     const apagado = el.dataset.vidrioLuz !== undefined ? " brightness(var(--vidrio-luz-cabecera))" : "";
-    const fondo = (b > 0 ? `blur(${Math.round(b * .5)}px) ` : "") + `${filtro} saturate(${100 + n}%)${apagado}`;
+    const fondo = (b > 0 ? `blur(${Math.round(b * .6)}px) ` : "") + `${filtro} saturate(${100 + n}%)${apagado}`;
     el.style.webkitBackdropFilter = fondo;
     el.style.backdropFilter = fondo;
   }
@@ -2491,7 +2491,7 @@ function aplicarVidrio(oscuro) {
   r.style.setProperty("--vidrio-alfa", (oscuro ? .90 - n * .0063 : .98 - n * .006).toFixed(3));
   r.style.setProperty("--vidrio-filtro",
     n === 0 ? "none"
-            : "saturate(" + (100 + n) + "%)" + (b > 0 ? " blur(" + Math.round(b * .5) + "px)" : ""));
+            : "saturate(" + (100 + n) + "%)" + (b > 0 ? " blur(" + Math.round(b * .6) + "px)" : ""));
 }
 /* tema: el del sistema por omisión, o forzado desde Ajustes */
 function aplicarTema() {
@@ -2528,6 +2528,14 @@ hidratar();
    así que los números siempre vienen del servidor. */
 if ("serviceWorker" in navigator) {
   addEventListener("load", () => navigator.serviceWorker.register("/sw.js").catch(() => {}));
+  /* Cuando entra una versión nueva, se toma sola. Sin esto, si tenías la app
+     abierta desde antes de un cambio, seguías viendo la vieja hasta cerrarla
+     del todo — y así no hay forma de saber si un arreglo llegó o no.
+     La primera instalación no recarga: solo cuando ya había una versión. */
+  const habiaVersion = !!navigator.serviceWorker.controller;
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
+    if (habiaVersion) location.reload();
+  });
 }
 </script>
 </body>

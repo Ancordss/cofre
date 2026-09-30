@@ -1,7 +1,7 @@
 /* Cofre — service worker.
    Deja la app instalable y funcionando sin señal. La API nunca se cachea:
    los números siempre se piden al servidor. */
-const CACHE = "cofre-v2";
+const CACHE = "cofre-v3";
 const CASCARON = ["/", "/manifest.webmanifest", "/icon-192.png", "/icon-512.png", "/icon-maskable-512.png"];
 
 self.addEventListener("install", (e) => {
