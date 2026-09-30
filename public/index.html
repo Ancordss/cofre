@@ -1592,14 +1592,14 @@ function viewAjustes() {
         </span>
       </div>
       <div class="setrow">
-        <span class="setk">Vidrio<span class="sub">Cuánto se ve a través. En 0 queda opaco; arriba del todo, casi solo cristal.</span></span>
+        <span class="setk">Vidrio<span class="sub">La transparencia: cuánto se ve a través. En 0 queda opaco; arriba del todo, casi solo cristal.</span></span>
         <input class="rango" type="range" min="0" max="100" step="5" value="${vidrioN()}"
                data-vidrio aria-label="Vidrio" style="--pct:${vidrioN()}%">
       </div>
       <div class="setrow">
-        <span class="setk">Desenfoque<span class="sub">Cuánto se difumina lo que pasa por detrás. En 0 se ve nítido a través del cristal.</span></span>
+        <span class="setk">Blur<span class="sub">Cuánto se ve borroso lo que pasa por detrás. En 0 se lee nítido a través del cristal.</span></span>
         <input class="rango" type="range" min="0" max="100" step="5" value="${blurN()}"
-               data-desenfoque aria-label="Desenfoque" style="--pct:${blurN()}%">
+               data-desenfoque aria-label="Blur" style="--pct:${blurN()}%">
       </div>
       <div class="setrow">
         <span class="setk">Color<span class="sub">Tiñe los botones de acción, las pestañas, las barras y la burbuja del chat.</span></span>
@@ -1680,6 +1680,8 @@ function viewAjustes() {
         <span class="setv num">${n("gastos")} gastos · ${n("suscripciones")} subs · ${n("categorias")} categorías · ${n("tarjetas")} tarjetas · ${n("metas")} metas</span></div>
       <div class="setrow"><span class="setk">Servidor</span>
         <span class="setv num">${esc(location.host)}</span></div>
+      <div class="setrow"><span class="setk">Vidrio<span class="sub">Qué puede hacer este navegador. Si dice "solo blur", el vidrio no refracta aquí y el desenfoque es lo único que actúa.</span></span>
+        <span class="setv num">${REFRACCION ? "refracción + blur" : "solo blur"}</span></div>
       <div class="setrow"><span class="setk">Versión</span>
         <span class="setv num">${esc(window.__version || "—")}</span></div>
       <div class="setrow"><span class="setk">Código</span>
@@ -1948,7 +1950,17 @@ function pintarAviso() {
    que se ve como vidrio de verdad y no como una caja borrosa.
    Cuando no lo aceptan, queda el desenfoque de la hoja, que ya está ahí. */
 const REFRACCION = (() => {
-  try { return CSS.supports("backdrop-filter", 'url("#cofre-lente") blur(2px)'); } catch { return false; }
+  try {
+    if (!CSS.supports("backdrop-filter", 'url("#cofre-lente") blur(2px)')) return false;
+    /* Safari acepta esa sintaxis pero no siempre pinta el filtro, y cuando eso
+       pasa se lleva por delante TODO el backdrop-filter, incluido el
+       desenfoque: el vidrio queda como un tinte plano y la barra de blur no
+       hace nada. Ahí se usa solo el desenfoque, que sí funciona en todos
+       lados. La refracción es un extra, no puede romper lo básico. */
+    const ua = navigator.userAgent;
+    if (/safari/i.test(ua) && !/chrome|chromium|crios|edg|android/i.test(ua)) return false;
+    return true;
+  } catch { return false; }
 })();
 
 /* El mapa que le dice a la lente hacia dónde empujar cada píxel: gris neutro
