@@ -1577,9 +1577,14 @@ function viewAjustes() {
         </span>
       </div>
       <div class="setrow">
-        <span class="setk">Vidrio<span class="sub">Cuánto desenfoca lo que pasa por detrás. En 0 queda opaco; arriba del todo, casi solo cristal.</span></span>
+        <span class="setk">Vidrio<span class="sub">Cuánto se ve a través. En 0 queda opaco; arriba del todo, casi solo cristal.</span></span>
         <input class="rango" type="range" min="0" max="100" step="5" value="${vidrioN()}"
-               data-vidrio aria-label="Intensidad del vidrio" style="--pct:${vidrioN()}%">
+               data-vidrio aria-label="Vidrio" style="--pct:${vidrioN()}%">
+      </div>
+      <div class="setrow">
+        <span class="setk">Desenfoque<span class="sub">Cuánto se difumina lo que pasa por detrás. En 0 se ve nítido a través del cristal.</span></span>
+        <input class="rango" type="range" min="0" max="100" step="5" value="${blurN()}"
+               data-desenfoque aria-label="Desenfoque" style="--pct:${blurN()}%">
       </div>
       <div class="setrow">
         <span class="setk">Color<span class="sub">Tiñe los botones de acción, las pestañas, las barras y la burbuja del chat.</span></span>
@@ -1997,7 +2002,8 @@ function pintarVidrio() {
     const filtro = filtroDeLente(w, h, Math.min(Math.round(h / 2), Math.round(radioDe(el))), prof, fuerza, ab);
     /* la cabecera apaga lo que tiene detrás para camuflarse sin volverse opaca */
     const apagado = el.dataset.vidrioLuz !== undefined ? " brightness(var(--vidrio-luz-cabecera))" : "";
-    const fondo = `blur(${Math.round(n * .5)}px) ${filtro} saturate(${100 + n}%)${apagado}`;
+    const b = blurN();
+    const fondo = (b > 0 ? `blur(${Math.round(b * .5)}px) ` : "") + `${filtro} saturate(${100 + n}%)${apagado}`;
     el.style.webkitBackdropFilter = fondo;
     el.style.backdropFilter = fondo;
   }
@@ -2082,6 +2088,13 @@ $("#app").addEventListener("input", e => {
     /* el tinte y el desenfoque se aplican al instante; la refracción se
        rehace al soltar, porque regenerar el mapa en cada cuadro del arrastre
        no se notaría y sí costaría */
+    aplicarVidrio();
+    clearTimeout(tVidrio); tVidrio = setTimeout(pintarVidrio, 150);
+    return;
+  }
+  if (d.desenfoque !== undefined) {
+    localStorage.setItem("cofre_blur", el.value);
+    el.style.setProperty("--pct", el.value + "%");
     aplicarVidrio();
     clearTimeout(tVidrio); tVidrio = setTimeout(pintarVidrio, 150);
     return;
@@ -2430,13 +2443,22 @@ function vidrioN() {
   const v = parseInt(localStorage.getItem("cofre_vidrio"), 10);
   return Number.isFinite(v) ? Math.min(100, Math.max(0, v)) : 70;
 }
+/* El desenfoque va aparte del vidrio: son dos cosas distintas. El vidrio es
+   cuánto se ve a través; el desenfoque, cuánto se difumina lo de atrás. Se
+   pueden querer por separado: cristal muy transparente y apenas difuminado,
+   o al revés. */
+function blurN() {
+  const v = parseInt(localStorage.getItem("cofre_blur"), 10);
+  return Number.isFinite(v) ? Math.min(100, Math.max(0, v)) : 70;
+}
 function aplicarVidrio(oscuro) {
   const r = document.documentElement;
   if (oscuro === undefined) oscuro = esOscuro();
-  const n = vidrioN();
+  const n = vidrioN(), b = blurN();
   r.style.setProperty("--vidrio-alfa", (oscuro ? .90 - n * .0063 : .98 - n * .006).toFixed(3));
   r.style.setProperty("--vidrio-filtro",
-    n === 0 ? "none" : "saturate(" + (100 + n) + "%) blur(" + Math.round(n * .5) + "px)");
+    n === 0 ? "none"
+            : "saturate(" + (100 + n) + "%)" + (b > 0 ? " blur(" + Math.round(b * .5) + "px)" : ""));
 }
 /* tema: el del sistema por omisión, o forzado desde Ajustes */
 function aplicarTema() {
