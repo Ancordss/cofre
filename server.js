@@ -112,6 +112,13 @@ agregarColumna("subscriptions", "medio", "TEXT NOT NULL DEFAULT 'efectivo'");
    La columna spendings.medio queda en la base pero ya no se usa. */
 agregarColumna("categories", "medio", "TEXT NOT NULL DEFAULT 'tarjeta'");
 agregarColumna("settings", "ingreso_proximo", "REAL NOT NULL DEFAULT 0");
+/* Preferencias de apariencia. Van en la base, con los datos, para que el color,
+   el vidrio y el desenfoque te sigan de un aparato a otro en vez de quedarse en
+   el navegador donde los elegiste. Vacío = sin elegir. */
+agregarColumna("settings", "pref_acento", "TEXT NOT NULL DEFAULT ''");
+agregarColumna("settings", "pref_resalte", "TEXT NOT NULL DEFAULT ''");
+agregarColumna("settings", "pref_vidrio", "TEXT NOT NULL DEFAULT ''");
+agregarColumna("settings", "pref_blur", "TEXT NOT NULL DEFAULT ''");
 
 const columnasSettings = db.query("PRAGMA table_info(settings)").all().map(c => c.name);
 if (!columnasSettings.includes("usd_gtq"))
@@ -173,9 +180,10 @@ const num = (v, d = 0) => { const n = Number(v); return Number.isFinite(n) ? n :
 
 /* ───────────────────────────── estado ───────────────────────────── */
 function readState() {
-  const s = db.query("SELECT ingreso, mes, usd_gtq, moneda_base, saldo_inicial, ingreso_proximo FROM settings WHERE id = 1")
+  const s = db.query("SELECT ingreso, mes, usd_gtq, moneda_base, saldo_inicial, ingreso_proximo, pref_acento, pref_resalte, pref_vidrio, pref_blur FROM settings WHERE id = 1")
     .get() || { ingreso: 0, mes: "", usd_gtq: USD_DEFAULT, moneda_base: "GTQ",
-                saldo_inicial: 0, ingreso_proximo: 0 };
+                saldo_inicial: 0, ingreso_proximo: 0,
+                pref_acento: "", pref_resalte: "", pref_vidrio: "", pref_blur: "" };
   const saldos = db.query("SELECT card_id, month_id, amount FROM balances").all();
   const porTarjeta = new Map();
   for (const b of saldos) {
@@ -209,6 +217,10 @@ function readState() {
     previstos: db.query(
       "SELECT id,nombre,monto,fecha,hecho,mes FROM planned ORDER BY pos"
     ).all().map(x => ({ ...x, hecho: !!x.hecho })),
+    prefs: {
+      acento: s.pref_acento, resalte: s.pref_resalte,
+      vidrio: s.pref_vidrio, blur: s.pref_blur,
+    },
   };
 }
 
@@ -217,9 +229,11 @@ function readState() {
 function writeState(st) {
   const tiene = k => Array.isArray(st[k]);
   db.transaction(() => {
-    db.query("UPDATE settings SET ingreso = ?, mes = ?, usd_gtq = ?, saldo_inicial = ?, ingreso_proximo = ? WHERE id = 1")
+    db.query("UPDATE settings SET ingreso = ?, mes = ?, usd_gtq = ?, saldo_inicial = ?, ingreso_proximo = ?, pref_acento = ?, pref_resalte = ?, pref_vidrio = ?, pref_blur = ? WHERE id = 1")
       .run(num(st.ingreso), String(st.mes ?? ""), num(st.usdGtq, USD_DEFAULT),
-           num(st.saldoInicial), num(st.ingresoProximo));
+           num(st.saldoInicial), num(st.ingresoProximo),
+           String(st.prefs?.acento ?? ""), String(st.prefs?.resalte ?? ""),
+           String(st.prefs?.vidrio ?? ""), String(st.prefs?.blur ?? ""));
     if (tiene("gastos")) {
       db.query("DELETE FROM expenses").run();
       st.gastos.forEach((g, i) => db.query(
@@ -356,6 +370,14 @@ function normalizar(st) {
     id: String(a.id || uid()), metaId: String(a.metaId ?? ""), monto: num(a.monto),
     fecha: String(a.fecha ?? ""), mes: String(a.mes ?? ""),
   }));
+  /* Preferencias de apariencia. Van con los datos para que el color, el vidrio
+     y el desenfoque te sigan de un aparato a otro, en vez de quedarse en el
+     navegador donde los elegiste. Se guardan como texto y vacío = sin elegir. */
+  const pre = st.prefs && typeof st.prefs === "object" ? st.prefs : {};
+  out.prefs = {
+    acento: String(pre.acento ?? ""), resalte: String(pre.resalte ?? ""),
+    vidrio: String(pre.vidrio ?? ""), blur: String(pre.blur ?? ""),
+  };
   return out;
 }
 
@@ -1317,36 +1339,52 @@ async function mcp(body) {
 }
 
 /* ───────────────────────────── chat ───────────────────────────── */
-const SISTEMA_CHAT = `Eres el asistente financiero de un hogar en Guatemala. Hablas español claro y directo.
+const SISTEMA_CHAT = `Eres el asistente financiero de este hogar. Conoces sus números al detalle y
+respondes como un asesor de confianza: claro, concreto, sin relleno.
 
-Tienes herramientas que LEEN y MODIFICAN el presupuesto real de la persona. Reglas:
-- Nunca inventes cifras. Antes de responder con números, consulta con 'estado' o 'resumen'.
-- Para un dato puntual, usa la herramienta que corresponda.
-- Puedes crear y modificar (marcar pagado, registrar gastos, presupuestar, fijar límites, aportar a metas, anotar previstos), pero NO borrar: si pide eliminar algo, dile que lo haga en la app.
+REGLAS
+- Nunca inventes cifras. Si te falta un dato, dilo y pide exactamente lo que hace falta.
+- Arriba tienes una foto del estado actual ya consultada. Para más detalle (historial, movimientos,
+  saldos por mes) usa las herramientas.
+- Puedes modificar datos: marcar pagos, anotar gastos, presupuestar, aportar a metas, fijar límites
+  y cerrar el mes. NO puedes borrar: si te lo piden, diles que lo hagan en la app.
 
-Cómo funciona su presupuesto, para que lo expliques bien:
-- Moneda: quetzal (Q). Las suscripciones pueden estar en dólares y se convierten con el tipo de cambio.
-- Cada gasto tiene un medio de pago: 'efectivo' o 'tarjeta'. Es la pieza central del modelo.
-- Cascada de efectivo: ingreso + saldo inicial − gastos fijos EN EFECTIVO − suscripciones EN EFECTIVO = disponible del mes; − presupuestos de categoría − aportes a metas = libre; − lo ya pagado a tarjetas = lo que queda.
-- Lo que se carga a la tarjeta NO sale del efectivo de este mes: se acumula y se paga el mes que viene. Por eso, si casi todo está en efectivo el mes puede verse apretado aunque la persona esté bien.
-- Ciclo de la tarjeta: deuda que traes + lo cargado este mes (fijos, suscripciones y variables marcados como tarjeta) + los gastos previstos = la deuda que pagarás el próximo mes.
-- Margen para gastar: ingreso esperado del próximo mes − esa deuda del próximo mes − fijos que pagarás en efectivo − presupuestos − metas. Ese es el número de "puedes gastar todavía".
-- El medio de pago se elige gasto por gasto y se puede cambiar cuando quieras.
-- Tarjetas: 'queda' es el saldo al cerrar el mes; el pago de ese mes se calcula solo como saldo anterior menos lo que queda.
-- El presupuesto de categorías es dinero apartado, no necesariamente gastado.
-- CERRAR EL MES: cuando digan que van a pasar al mes siguiente (por ejemplo "estaremos pasando a octubre"), usa 'cerrar_mes' con confirmar=true.
-  Su ciclo es: a fin de mes paga la TARJETA (que son los gastos de ese mes) y paga los GASTOS FIJOS DEL MES SIGUIENTE.
-  Por eso 'conservar_pagados' va en true (es el valor por omisión): los fijos que ya marcó pasan al mes nuevo marcados, porque los pagó adelantados.
-  El cierre congela el mes que termina en el historial, arrastra el efectivo que sobró como saldo inicial y pasa el ingreso esperado a ser el ingreso del mes nuevo.
-  Los gastos variables y los previstos del mes que cierra se quedan en ese mes.
-  Después pídeles el ingreso esperado del mes que viene y que anoten los saldos de las tarjetas al cerrar.
+CÓMO RESPONDER
+Primero la respuesta, después el porqué. Estructura:
+1. La respuesta directa en una línea, con el número en negritas.
+2. Los dos o tres datos que la sostienen, cada uno con su monto.
+3. Una recomendación concreta: una sola, con el número que la respalda.
+- Cifras en quetzales con formato Q12,345.67. Si conviertes dólares, di el tipo de cambio que usaste.
+- Máximo 8 líneas, salvo que pidan un análisis a fondo.
+- Habla de tu y de ti, nunca de el usuario.
+- Si detectas un riesgo (se va a pasar, cuentas sin pagar, la deuda no baja, una meta estancada),
+  dilo de frente y propón qué hacer. Sin sermones.
+- Cuando cambies algo, di exactamente qué cambiaste y cómo quedaron los números.
 
-Cómo respondes:
-- Máximo 6 líneas o una lista corta: se lee en un teléfono.
-- Cifras de su caso concreto, con formato Q12,345.67. Nada de generalidades.
-- Si pide una recomendación, da UNA, con el número que la respalda. Sin sermones ni advertencias genéricas.
-- Si algo no cuadra o se va a pasar, dilo de frente.
-- Cuando cambies algo, di exactamente qué cambiaste y cómo queda.`;
+EL MODELO DEL QUE HABLAS
+- Cada gasto tiene un medio de pago: efectivo o tarjeta. Lo que se carga a la tarjeta no sale del
+  efectivo del mes: se acumula y se paga el mes siguiente.
+- Cascada de efectivo: ingreso más arrastre, menos gastos fijos en efectivo, menos suscripciones en
+  efectivo, igual a disponible del mes. Menos presupuestos por categoría y aportes a metas, igual a
+  libre para asignar.
+- Ciclo de la tarjeta: la deuda que traes, más lo cargado este mes, más los previstos, igual a la
+  deuda que pagarás el próximo mes.
+- Margen: ingreso esperado del próximo mes, menos esa deuda, menos los fijos que pagarás en efectivo,
+  menos presupuestos y metas, igual a lo que puedes gastar todavía con la tarjeta.
+- El presupuesto de una categoría es dinero apartado, no necesariamente gastado. El medio de pago lo
+  define la categoría, no cada gasto suelto.
+- Cerrar el mes: congela ese mes en el historial, arrastra el efectivo que sobró y pasa el ingreso
+  esperado a ser el ingreso del mes. Los fijos marcados viajan al mes nuevo también marcados, porque
+  en esta casa los fijos del mes siguiente se pagan a fin de mes.
+
+LA APP, PARA QUE LA EXPLIQUES
+- Chat: aquí, la pantalla de inicio.
+- Mes: ingreso, arrastre, la cascada, los gastos fijos, las suscripciones, el cierre de mes y el historial.
+- Gastos: presupuestos por categoría y el registro del día a día.
+- Metas: ahorros con objetivo y aporte mensual.
+- Límite: cuánto puedes cargar a la tarjeta este mes sin pasarte, y los gastos previstos.
+- Tarjetas: la deuda, los saldos al cerrar cada mes y cuántos meses te tomaría liquidarla.
+- Ajustes (el engranaje arriba a la derecha): tema claro u oscuro, tipo de cambio, respaldo y sesión.`;
 
 const TOOLS_CHAT = TOOLS.filter(t => !/^(eliminar|borrar)/.test(t.name))
   .map(({ name, description, inputSchema }) => ({ type: "function", function: { name, description, parameters: inputSchema } }));
@@ -1506,7 +1544,8 @@ Bun.serve({
 
     if (path.startsWith("/api/")) {
       if (!tokenValido(req)) return json({ error: "no autorizado" }, 401);
-      if (path === "/api/state" && req.method === "GET") return json({ rev: rev(), state: readState() });
+      if (path === "/api/state" && req.method === "GET")
+        return json({ rev: rev(), state: readState(), version: VERSION });
       if (path === "/api/state" && req.method === "PUT") {
         const body = await req.json().catch(() => null);
         if (!body || typeof body !== "object") return json({ error: "cuerpo inválido" }, 400);
@@ -1571,10 +1610,21 @@ Bun.serve({
 
     const rel = path === "/" ? "/index.html" : path;
     const file = Bun.file(join(PUBLIC_DIR, rel.replace(/\.\./g, "")));
-    if (await file.exists())
+    if (await file.exists()) {
+      /* el manifiesto y el service worker necesitan su tipo exacto: con
+         octet-stream el navegador rechaza el PWA y no deja instalarlo */
+      const tipos = {
+        "/manifest.webmanifest": "application/manifest+json",
+        "/sw.js": "text/javascript; charset=utf-8",
+      };
+      const fresco = rel === "/index.html" || rel === "/sw.js" || rel === "/manifest.webmanifest";
       return new Response(file, {
-        headers: { "cache-control": rel === "/index.html" ? "no-cache" : "public, max-age=3600" },
+        headers: {
+          ...(tipos[rel] ? { "content-type": tipos[rel] } : {}),
+          "cache-control": fresco ? "no-cache" : "public, max-age=3600",
+        },
       });
+    }
     return new Response("No encontrado", { status: 404 });
   },
 });

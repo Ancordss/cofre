@@ -4,412 +4,861 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<meta name="theme-color" content="#F3EFE6" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#14120F" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#F2F2F7">
+<meta name="description" content="Gastos fijos, presupuestos, metas de ahorro y deuda de tarjetas, con un asistente que ve tus números.">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="icon" href="/icon-192.png">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Cofre">
+<meta name="application-name" content="Cofre">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <title>Cofre</title>
+<script>
+/* El tema se aplica antes del primer pintado: si se hiciera después, la app
+   aparecería un instante en blanco y luego en negro. */
+(() => {
+  const t = localStorage.getItem("cofre_tema") || "sistema";
+  const r = document.documentElement;
+  if (t === "claro") r.dataset.tema = "light";
+  else if (t === "oscuro") r.dataset.tema = "dark";
+  const oscuro = t === "oscuro" || (t === "sistema" && matchMedia("(prefers-color-scheme:dark)").matches);
+  document.querySelector('meta[name="theme-color"]').content = oscuro ? "#000000" : "#F2F2F7";
+})();
+</script>
 <style>
-/* ─────────────────────────────  base  ───────────────────────────── */
+/* ═══════════════════════════════════════════════════════════════════════
+   Cofre — sistema de diseño
+   Lenguaje Google Material + Apple HIG: superficies limpias, tipografía del
+   sistema, un solo acento, formas redondeadas y movimiento con intención.
+   ═══════════════════════════════════════════════════════════════════════ */
 :root{
-  --paper:#F3EFE6; --card:#FBF8F2; --ink:#16130F; --ink-2:#4A423A;
-  --muted:#8B8073; --rule:#D9D1C2; --rule-2:#E8E2D6;
-  --brass:#96652B; --brass-soft:#EFE1CB;
-  --settled:#2E6046; --settled-soft:#DEEADF;
-  --debt:#9E3527; --debt-soft:#F1DCD5;
-  --shadow:0 1px 2px rgba(22,19,15,.05), 0 8px 24px -12px rgba(22,19,15,.18);
-  --serif:"Iowan Old Style","Palatino Linotype",Palatino,"Book Antiqua","Hoefler Text",Georgia,serif;
-  --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,Monaco,"Cascadia Mono",Consolas,monospace;
-  --r:10px; --pad:clamp(16px,4.6vw,26px);
+  color-scheme:light dark;
+  /* superficies */
+  --bg:#F2F2F7; --surface:#FFFFFF; --surface-2:#F2F2F7; --surface-3:#E9E9EE;
+  /* Vidrio del sistema: tinte neutro, filo de luz de medio píxel, brillo muy
+     suave arriba y sombra ancha. Se lee como vidrio por el filo y la sombra,
+     no por ser blanco. La transparencia y el desenfoque los mueve el control
+     de Ajustes; aquí solo va el color y el carácter del material. */
+  --vidrio-rgb: 242 242 247;
+  --vidrio-alfa: .56;
+  --vidrio-filtro: saturate(170%) blur(42px);
+  --vidrio-filo: inset 0 .5px 0 rgba(255,255,255,1), inset 0 0 0 .5px rgba(255,255,255,.55),
+                 0 .5px 0 rgba(255,255,255,.5);
+  --vidrio-brillo: linear-gradient(180deg, rgba(255,255,255,.4), rgba(255,255,255,.03) 34%, rgba(255,255,255,0));
+  --vidrio-sombra: 0 14px 40px rgba(0,0,0,.17), 0 2px 6px rgba(0,0,0,.06);
+  /* Cuánto se aclara u oscurece lo que se ve por detrás del cristal de la
+     cabecera. Es la alternativa a subir la opacidad: el cristal sigue siendo
+     transparente y con desenfoque, pero lo de atrás se apaga hasta el color
+     del fondo y la franja deja de notarse. */
+  --vidrio-luz-cabecera: 1.02;
+  /* Botones: relleno plano, como los del sistema (imagen de referencia), no
+     vidrio. El de acción sí lleva el color elegido, con la letra en blanco. */
+  --btn-fondo:#E5E5EA; --btn-texto:#1C1C1E;
+  --acento-texto:#FFFFFF;
+  /* texto */
+  --text:#1C1C1E; --text-2:#3C3C43; --text-3:#8E8E93;
+  /* acento y semánticos */
+  --accent:#007AFF; --accent-2:#0062CC; --accent-soft:#E6F0FF;
+  --red:#D70015; --red-soft:#FFE8E6; --red-line:#FF3B30;
+  --orange:#B25000; --orange-soft:#FFF0E0; --orange-line:#FF9500;
+  --purple:#8944AB; --purple-soft:#F5E9FA;
+  --border:rgba(60,60,67,.14); --border-2:rgba(60,60,67,.08);
+  /* formas y sombras */
+  --r-lg:18px; --r:14px; --r-sm:10px; --r-xs:7px; --r-pill:980px;
+  --sh-1:0 1px 2px rgba(0,0,0,.04), 0 2px 8px rgba(0,0,0,.05);
+  --sh-2:0 8px 28px rgba(0,0,0,.10);
+  --sh-3:0 18px 50px rgba(0,0,0,.18);
+  --pad:clamp(14px,4.2vw,22px);
+  --font:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI Variable Text","Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,Monaco,"Roboto Mono",monospace;
 }
-@media (prefers-color-scheme:dark){
-  :root{
-    --paper:#14120F; --card:#1D1A16; --ink:#F1EBE0; --ink-2:#C6BCAD;
-    --muted:#90867A; --rule:#37332C; --rule-2:#282520;
-    --brass:#D9A868; --brass-soft:#2A231A;
-    --settled:#84C4A0; --settled-soft:#1B2620;
-    --debt:#E28F80; --debt-soft:#2A1D1A;
-    --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 30px -14px rgba(0,0,0,.7);
+@media (prefers-color-scheme:dark){ html:not([data-tema="light"]){
+    --bg:#000000; --surface:#1C1C1E; --surface-2:#2C2C2E; --surface-3:#3A3A3C;
+    /* tinte negro, el mismo del fondo: el vidrio se ve por el desenfoque y el
+       filo, no por una capa gris encima */
+    --vidrio-rgb: 0 0 0;
+    --vidrio-alfa: .46;
+    --vidrio-filtro: saturate(170%) blur(42px);
+    --vidrio-filo: inset 0 .5px 0 rgba(255,255,255,.3), inset 0 0 0 .5px rgba(255,255,255,.11),
+                   0 1px 0 rgba(255,255,255,.05);
+    --vidrio-brillo: linear-gradient(180deg, rgba(255,255,255,.13), rgba(255,255,255,.02) 34%, rgba(255,255,255,0));
+    --vidrio-sombra: 0 16px 44px rgba(0,0,0,.62), 0 2px 6px rgba(0,0,0,.4);
+    /* en oscuro lo de atrás se apaga a menos de la mitad, que es lo que deja
+       la cabecera del mismo negro del fondo sin volverla opaca */
+    --vidrio-luz-cabecera: .82;
+    /* En oscuro, el gris del sistema y la letra en blanco: nada de vidrio, que
+       era lo que se veía sucio. */
+    --btn-fondo:#3A3A3C; --btn-texto:#FFFFFF;
+    --acento-texto:#FFFFFF;
+    --text:#FFFFFF; --text-2:#EBEBF5; --text-3:#8E8E93;
+    --accent:#0A84FF; --accent-2:#409CFF; --accent-soft:#0A2540;
+    --red:#FF6B60; --red-soft:#331512; --red-line:#FF453A;
+    --orange:#FFB340; --orange-soft:#33240E; --orange-line:#FF9F0A;
+    --purple:#CF8BF3; --purple-soft:#2A1436;
+    --border:rgba(255,255,255,.14); --border-2:rgba(255,255,255,.08);
+    --sh-1:0 1px 2px rgba(0,0,0,.5); --sh-2:0 8px 28px rgba(0,0,0,.6);
+    --sh-3:0 18px 50px rgba(0,0,0,.8);
+  }}
+html[data-tema="dark"]{
+    --bg:#000000; --surface:#1C1C1E; --surface-2:#2C2C2E; --surface-3:#3A3A3C;
+    /* tinte negro, el mismo del fondo: el vidrio se ve por el desenfoque y el
+       filo, no por una capa gris encima */
+    --vidrio-rgb: 0 0 0;
+    --vidrio-alfa: .46;
+    --vidrio-filtro: saturate(170%) blur(42px);
+    --vidrio-filo: inset 0 .5px 0 rgba(255,255,255,.3), inset 0 0 0 .5px rgba(255,255,255,.11),
+                   0 1px 0 rgba(255,255,255,.05);
+    --vidrio-brillo: linear-gradient(180deg, rgba(255,255,255,.13), rgba(255,255,255,.02) 34%, rgba(255,255,255,0));
+    --vidrio-sombra: 0 16px 44px rgba(0,0,0,.62), 0 2px 6px rgba(0,0,0,.4);
+    /* en oscuro lo de atrás se apaga a menos de la mitad, que es lo que deja
+       la cabecera del mismo negro del fondo sin volverla opaca */
+    --vidrio-luz-cabecera: .82;
+    /* En oscuro, el gris del sistema y la letra en blanco: nada de vidrio, que
+       era lo que se veía sucio. */
+    --btn-fondo:#3A3A3C; --btn-texto:#FFFFFF;
+    --acento-texto:#FFFFFF;
+    --text:#FFFFFF; --text-2:#EBEBF5; --text-3:#8E8E93;
+    --accent:#0A84FF; --accent-2:#409CFF; --accent-soft:#0A2540;
+    --red:#FF6B60; --red-soft:#331512; --red-line:#FF453A;
+    --orange:#FFB340; --orange-soft:#33240E; --orange-line:#FF9F0A;
+    --purple:#CF8BF3; --purple-soft:#2A1436;
+    --border:rgba(255,255,255,.14); --border-2:rgba(255,255,255,.08);
+    --sh-1:0 1px 2px rgba(0,0,0,.5); --sh-2:0 8px 28px rgba(0,0,0,.6);
+    --sh-3:0 18px 50px rgba(0,0,0,.8);
   }
-}
 *{box-sizing:border-box}
-html{-webkit-text-size-adjust:100%}
+html{-webkit-text-size-adjust:100%; scroll-behavior:smooth}
 body{
-  margin:0; background:var(--paper); color:var(--ink);
-  font-family:var(--serif); font-size:16px; line-height:1.5;
-  padding-bottom:calc(78px + env(safe-area-inset-bottom));
-  -webkit-font-smoothing:antialiased;
+  margin:0; background:var(--bg); color:var(--text); font-family:var(--font);
+  font-size:16px; line-height:1.42; letter-spacing:-.01em;
+  padding-bottom:calc(108px + env(safe-area-inset-bottom));
+  -webkit-font-smoothing:antialiased; -webkit-tap-highlight-color:transparent;
 }
-body::before{
-  content:""; position:fixed; inset:0; z-index:1; pointer-events:none; opacity:.05;
-  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)'/%3E%3C/svg%3E");
-}
-@media (prefers-color-scheme:dark){ body::before{opacity:.07; mix-blend-mode:screen} }
-button,input,select{font:inherit; color:inherit}
-button{cursor:pointer}
-:focus-visible{outline:2px solid var(--brass); outline-offset:2px; border-radius:2px}
+button,input,select{font:inherit; color:inherit; letter-spacing:inherit}
+button{cursor:pointer; -webkit-appearance:none; appearance:none}
+:focus-visible{outline:2.5px solid var(--accent); outline-offset:2px; border-radius:var(--r-xs)}
 
-/* ─────────────────────────  tipografía  ───────────────────────── */
+/* ── tipografía ───────────────────────────────────────────────────────── */
+.num{font-variant-numeric:tabular-nums; font-feature-settings:"tnum"}
 .eyebrow,.lbl{
-  font-family:var(--mono); font-size:10.5px; letter-spacing:.17em;
-  text-transform:uppercase; color:var(--muted); line-height:1.3;
+  font-size:11px; font-weight:600; letter-spacing:.06em; text-transform:uppercase;
+  color:var(--text-3); line-height:1.3
 }
-.num{font-family:var(--mono); font-variant-numeric:tabular-nums; font-feature-settings:"tnum"}
-.display{font-family:var(--serif); font-size:clamp(28px,7.6vw,36px); line-height:1.05; letter-spacing:-.015em}
+.lbl{text-transform:none; letter-spacing:0; font-weight:500; font-size:13px}
+.display{font-size:clamp(30px,9vw,40px); font-weight:700; letter-spacing:-.03em; line-height:1.05}
 .h-sec{
-  font-family:var(--mono); font-size:11px; letter-spacing:.2em; text-transform:uppercase;
-  color:var(--muted); display:flex; align-items:center; gap:12px; margin:0 0 14px;
+  font-size:13px; font-weight:600; color:var(--text-3); letter-spacing:.01em;
+  display:flex; align-items:center; gap:10px; margin:0 0 10px; padding-left:2px
 }
-.h-sec::after{content:""; flex:1; height:1px; background:var(--rule)}
-.settled{color:var(--settled)} .debt{color:var(--debt)} .brass{color:var(--brass)}
-small,.small{font-size:12.5px; color:var(--muted)}
+.h-sec::after{content:""; flex:1; height:1px; background:var(--border-2); display:none}
+small,.small{font-size:12.5px; color:var(--text-3)}
+/* "Te queda por gastar" y "Gastado" van en la misma lista: si el primero
+   siguiera al acento, con el acento en rojo los dos se leerían igual y no se
+   sabría cuál es la buena noticia. El bueno se queda en el color normal y el
+   gasto mantiene el rojo de aviso. */
+.settled{color:var(--text)} .debt{color:var(--red)} .brass{color:var(--orange)}
 
-/* ─────────────────────────  masthead  ───────────────────────── */
+/* ── cabecera ─────────────────────────────────────────────────────────── */
+/* La cabecera se camufla sin dejar de ser cristal: mismo color que el fondo,
+   sin borde, sin filo y sin brillo arriba, y lo que pasa por detrás se apaga
+   (--vidrio-luz-cabecera) en vez de subirle la opacidad. Así sigue siendo
+   transparente y con desenfoque, pero la franja no se nota. */
 .masthead{
-  position:sticky; top:0; z-index:20; background:var(--paper);
-  border-bottom:3px double var(--ink); padding:14px var(--pad) 12px;
+  position:sticky; top:0; z-index:20;
+  background-color:rgb(var(--vidrio-rgb) / min(1, calc(var(--vidrio-alfa) + .02)));
+  -webkit-backdrop-filter:var(--vidrio-filtro) brightness(var(--vidrio-luz-cabecera));
+  backdrop-filter:var(--vidrio-filtro) brightness(var(--vidrio-luz-cabecera));
+  padding:12px var(--pad) 14px;
+  padding-top:calc(12px + env(safe-area-inset-top));
 }
-.masthead .wrap{max-width:820px; margin:0 auto}
-.mh-top{display:flex; justify-content:space-between; align-items:baseline; gap:12px}
-.mh-month{font-family:var(--serif); font-style:italic; font-size:15px; color:var(--ink-2)}
-.mh-right{display:flex; align-items:baseline; gap:10px}
+.masthead .wrap{max-width:880px; margin:0 auto}
+.mh-top{display:flex; justify-content:space-between; align-items:center; gap:12px}
+.mh-month{font-size:14px; font-weight:600; color:var(--text-2)}
+.mh-right{display:flex; align-items:center; gap:10px}
 .sync{
-  font-family:var(--mono); font-size:10px; letter-spacing:.14em; text-transform:uppercase;
-  color:var(--muted); display:inline-flex; align-items:center; gap:5px
+  display:inline-flex; align-items:center; gap:6px; font-size:11.5px; font-weight:600;
+  color:var(--text-3)
 }
-.sync i{width:6px; height:6px; border-radius:50%; background:var(--settled); display:block; transition:background .3s}
-.sync[data-s="saving"] i{background:var(--brass)}
-.sync[data-s="error"] i,.sync[data-s="conflict"] i{background:var(--debt)}
-.sync[data-s="offline"] i{background:var(--muted)}
-.mh-main{display:flex; justify-content:space-between; align-items:flex-end; gap:18px; margin-top:10px}
-.mh-side{text-align:right; flex:0 0 auto; padding-bottom:4px}
-.mh-side .num{font-size:15px; color:var(--ink-2)}
-.bar{height:3px; background:var(--rule-2); border-radius:2px; overflow:hidden}
-.bar > i{display:block; height:100%; width:0; background:var(--settled); transition:width .5s cubic-bezier(.22,1,.36,1)}
-.mh-foot{margin-top:8px; display:flex; justify-content:space-between; gap:12px}
-.mh-foot .num{font-size:11.5px; color:var(--muted); letter-spacing:.06em}
+/* El puntito de "guardado" es gris, no verde: guardar es lo normal, no un
+   logro. Solo se enciende cuando pasa algo (guardando, error, sin conexión). */
+.sync i{width:7px; height:7px; border-radius:50%; background:var(--text-3); display:block; transition:background .3s}
+.sync[data-s="saving"] i{background:var(--orange-line)}
+.sync[data-s="error"] i,.sync[data-s="conflict"] i{background:var(--red-line)}
+.sync[data-s="offline"] i{background:var(--text-3)}
+.mh-main{display:flex; justify-content:space-between; align-items:flex-end; gap:16px; margin-top:6px}
+.mh-main > div:first-child{min-width:0}
+.mh-side{text-align:right; flex:0 0 auto; padding-bottom:3px}
+.mh-side .num{font-size:15px; font-weight:600; color:var(--text-2)}
+.bar{height:6px; background:var(--surface-3); border-radius:var(--r-pill); overflow:hidden}
+.bar > i{display:block; height:100%; width:0; background:var(--accent); border-radius:inherit;
+  transition:width .6s cubic-bezier(.22,1,.36,1)}
+.mh-foot{margin-top:10px; display:flex; justify-content:space-between; gap:12px; align-items:center}
+.mh-foot .num{font-size:12.5px; font-weight:500; color:var(--text-3)}
 
-/* ─────────────────────────  layout  ───────────────────────── */
-main{max-width:820px; margin:0 auto; padding:26px var(--pad) 40px; position:relative; z-index:2}
-section{margin-bottom:38px}
+/* ── estructura ───────────────────────────────────────────────────────── */
+main{max-width:880px; margin:0 auto; padding:18px var(--pad) 32px}
+section{margin-bottom:26px}
 [data-anim]{animation:rise .5s cubic-bezier(.22,1,.36,1) both; animation-delay:var(--d,0s)}
-@keyframes rise{from{opacity:0; transform:translateY(9px)} to{opacity:1; transform:none}}
+@keyframes rise{from{opacity:0; transform:translateY(14px)} to{opacity:1; transform:none}}
+@keyframes pop{from{opacity:0; transform:scale(.92)} to{opacity:1; transform:none}}
+@keyframes sheet-up{from{transform:translateY(100%)} to{transform:none}}
+@keyframes shake{10%,90%{transform:translateX(-2px)}30%,70%{transform:translateX(3px)}50%{transform:translateX(-3px)}}
 @media (prefers-reduced-motion:reduce){*{animation:none !important; transition:none !important}}
 
-/* ─────────────────────────  ledger  ───────────────────────── */
-.ledger{border-top:1px solid var(--rule)}
+/* ── tarjetas ─────────────────────────────────────────────────────────── */
+.card{
+  background:var(--surface); border-radius:var(--r-lg); box-shadow:var(--sh-1);
+  padding:16px; margin-bottom:12px
+}
+.card.tight{padding:6px 16px}
+.card-title{font-size:13px; font-weight:600; color:var(--text-3); margin:0 0 12px; padding-left:2px}
+
+/* ── filas de lista (tarjetas de gasto) ───────────────────────────────── */
+.ledger{
+  background:var(--surface); border-radius:var(--r-lg); box-shadow:var(--sh-1);
+  overflow:hidden
+}
+/* Filas con las medidas del sistema: 44pt de alto mínimo, etiqueta de 17pt en
+   redonda y el separador alineado con el texto, no con el borde. Las medidas
+   van en variables para que el separador no se desalinee al cambiar de tamaño. */
 .row{
-  display:grid; grid-template-columns:38px 1fr auto 26px; gap:14px; align-items:center;
-  padding:13px 0; border-bottom:1px solid var(--rule-2); transition:background .18s
+  --tick:44px; --hueco:12px; --lado:16px;
+  display:grid; grid-template-columns:var(--tick) 1fr auto 34px; gap:var(--hueco);
+  align-items:center; min-height:52px; padding:11px var(--lado);
+  background:var(--surface); position:relative; transition:background .18s ease
+}
+.row + .row::before{
+  content:""; position:absolute; top:0; height:.5px; background:var(--border-2);
+  left:calc(var(--tick) + var(--hueco) + var(--lado)); right:0
 }
 .row .who{min-width:0}
 .row .line{display:flex; align-items:baseline; gap:10px}
-.row .name{font-family:var(--serif); font-size:17px; border:0; background:none; padding:1px 0; width:100%; min-width:0; transition:color .2s}
-.row .lead{flex:1; min-width:14px; border-bottom:1px dotted var(--rule); margin-bottom:4px}
-.row .amt{
-  font-family:var(--mono); font-size:15.5px; font-variant-numeric:tabular-nums;
-  border:0; background:none; padding:2px 0; width:9.5ch; text-align:right; transition:color .2s
+.row .name{
+  font-size:17px; font-weight:400; border:0; background:none; padding:2px 0;
+  width:100%; min-width:0; transition:color .2s
 }
-.row .meta{display:flex; gap:10px; margin-top:3px; font-family:var(--mono); font-size:11px; color:var(--muted); letter-spacing:.05em}
+.row .lead{display:none}
+.row .amt{
+  font-size:16.5px; font-weight:600; font-variant-numeric:tabular-nums;
+  border:0; background:none; padding:2px 0; width:9ch; text-align:right;
+  transition:color .2s
+}
+.row .meta{display:flex; gap:8px; margin-top:2px; font-size:13px; color:var(--text-3)}
 .row .meta:empty{display:none}
-.row.done{background:linear-gradient(90deg,var(--settled-soft) 0%,transparent 62%)}
-.row.done .name{color:var(--muted); text-decoration:line-through; text-decoration-thickness:1px; text-decoration-color:var(--rule)}
-.row.done .amt{color:var(--settled)}
-@media (hover:hover){.row:hover{background:var(--card)} .row.done:hover{background:var(--settled-soft)}}
+/* Una fila pagada se apaga a gris en vez de teñirse: es lo que hace el sistema
+   en las listas de tareas. Si siguiera al acento, con el acento en rojo una
+   fila pagada se vería como una deuda. */
+.row.done{background:color-mix(in srgb, var(--text) 6.5%, transparent)}
+.row.done .name{color:var(--text-3); text-decoration:line-through; text-decoration-color:var(--border)}
+.row.done .amt{color:var(--text-3)}
+@media (hover:hover){.row:hover{background:var(--surface-2)}
+  .row.done:hover{background:color-mix(in srgb, var(--text) 11%, transparent)}}
 
 .tick{
-  width:34px; height:34px; padding:0; border:1.5px solid var(--ink); border-radius:5px;
-  background:transparent; display:grid; place-items:center; transition:background .2s, border-color .2s
+  width:30px; height:30px; padding:0; border:2px solid var(--surface-3); border-radius:50%;
+  background:var(--surface); display:grid; place-items:center;
+  transition:background .22s cubic-bezier(.22,1,.36,1), border-color .22s, transform .12s
 }
-.tick svg{width:20px; height:20px}
-.tick path{fill:none; stroke:var(--paper); stroke-width:2.6; stroke-linecap:round; stroke-linejoin:round;
-  stroke-dasharray:26; stroke-dashoffset:26; transition:stroke-dashoffset .3s ease .04s}
-.tick[aria-pressed=true]{background:var(--ink); border-color:var(--ink)}
+.tick svg{width:17px; height:17px}
+.tick path{
+  fill:none; stroke:#fff; stroke-width:3.2; stroke-linecap:round; stroke-linejoin:round;
+  stroke-dasharray:26; stroke-dashoffset:26; transition:stroke-dashoffset .3s ease .05s
+}
+.tick[aria-pressed=true]{background:var(--accent); border-color:var(--accent)}
 .tick[aria-pressed=true] path{stroke-dashoffset:0}
+.tick:active{transform:scale(.9)}
 
-.more{width:26px; height:34px; border:0; background:none; color:var(--muted); font-family:var(--mono); font-size:15px; line-height:1; padding:0}
-.more:hover{color:var(--ink)}
-.details{grid-column:2 / -1; display:none; gap:12px; padding:12px 0 4px; border-top:1px dotted var(--rule); margin-top:10px}
-.row.open .details{display:flex; flex-wrap:wrap; align-items:center}
-.fld{display:flex; flex-direction:column; gap:3px}
-.fld input{font-family:var(--mono); font-size:13px; padding:6px 8px; border:1px solid var(--rule); border-radius:6px; background:var(--card); width:100%}
-.fld.dia input{width:9.5ch}
+.more{
+  width:34px; height:34px; border:0; background:none; color:var(--text-3);
+  font-size:18px; line-height:1; padding:0; border-radius:50%; transition:background .2s
+}
+.more:hover{background:var(--surface-2); color:var(--text)}
+
+.details{
+  grid-column:1 / -1; display:none; gap:12px; padding:14px 0 6px;
+  border-top:.5px solid var(--border-2); margin-top:10px
+}
+.row.open .details{display:flex; flex-wrap:wrap; align-items:flex-end}
+.fld{display:flex; flex-direction:column; gap:5px}
+.fld input{
+  font-size:14px; padding:9px 11px; border:1px solid var(--border); border-radius:var(--r-sm);
+  background:var(--surface-2); width:100%; transition:border-color .18s, background .18s
+}
+.fld input:focus{border-color:var(--accent); background:var(--surface)}
+.fld.dia input{width:9ch}
+
 .txtbtn{
-  border:0; background:none; padding:6px 2px; font-family:var(--mono); font-size:11px;
-  letter-spacing:.14em; text-transform:uppercase; color:var(--debt); border-bottom:1px solid transparent
+  border:0; background:none; padding:9px 4px; font-size:13px; font-weight:600;
+  color:var(--red); border-radius:var(--r-xs); transition:background .18s
 }
-.txtbtn:hover{border-bottom-color:currentColor}
+.txtbtn:hover{background:var(--red-soft)}
 .addbtn{
-  width:100%; margin-top:14px; padding:12px; border:1px dashed var(--rule); border-radius:var(--r);
-  background:none; font-family:var(--mono); font-size:11px; letter-spacing:.16em;
-  text-transform:uppercase; color:var(--muted); transition:.18s
+  width:100%; margin-top:12px; padding:14px; border:1.5px dashed var(--border);
+  border-radius:var(--r); background:transparent; font-size:15px; font-weight:600;
+  color:var(--accent); transition:.18s
 }
-.addbtn:hover{border-color:var(--brass); color:var(--brass); background:var(--brass-soft)}
+.addbtn:hover{border-color:var(--accent); background:var(--accent-soft)}
+.addbtn:active{transform:scale(.99)}
 
-/* ─────────────────────────  resumen / cascada  ───────────────────────── */
-.summary{border-top:1px solid var(--rule)}
-.srow{display:flex; align-items:baseline; gap:12px; padding:10px 0; border-bottom:1px solid var(--rule-2)}
-.srow .k{font-family:var(--serif); font-size:15px}
-.srow .k .sub{font-family:var(--mono); font-size:10.5px; color:var(--muted); letter-spacing:.08em}
-.srow .lead{flex:1; min-width:14px; border-bottom:1px dotted var(--rule); margin-bottom:4px}
-.srow .v{font-family:var(--mono); font-size:15px; font-variant-numeric:tabular-nums}
-.srow.total{border-bottom:1px solid var(--rule); border-top:1px solid var(--rule); margin-top:2px}
-.srow.total .k{color:var(--ink-2)}
-.srow.head{border-bottom:1px solid var(--rule); padding-bottom:13px}
-.srow.head .k{font-size:15px; color:var(--ink-2)}
-.srow.head .v{font-family:var(--serif); font-size:25px; letter-spacing:-.01em}
+/* ── resúmenes con líneas ─────────────────────────────────────────────── */
+.summary{background:var(--surface); border-radius:var(--r-lg); box-shadow:var(--sh-1); padding:6px 16px; margin-bottom:12px}
+.srow{display:flex; align-items:baseline; gap:12px; padding:11px 0; position:relative}
+.srow + .srow::before{content:""; position:absolute; top:0; left:0; right:0; height:.5px; background:var(--border-2)}
+.srow .k{font-size:15px; color:var(--text-2); min-width:0}
+.srow .k .sub{display:block; color:var(--text-3); font-size:12.5px; margin-top:3px}
+.srow .lead{display:none}
+.srow .v{font-size:15px; font-weight:600; font-variant-numeric:tabular-nums; margin-left:auto; white-space:nowrap}
+.srow.total .k,.srow.total .v{font-weight:700; color:var(--text)}
+.srow.head{padding:14px 0}
+.srow.head .k{font-size:15px; font-weight:600; color:var(--text-2)}
+.srow.head .v{font-size:24px; font-weight:700; letter-spacing:-.02em}
 
-/* ─────────────────────────  meses / chips  ───────────────────────── */
-.chips{display:flex; gap:8px; overflow-x:auto; padding:2px 0 10px; scrollbar-width:none}
+/* ── chips y meses ────────────────────────────────────────────────────── */
+.chips{display:flex; gap:8px; overflow-x:auto; padding:2px 0 12px; scrollbar-width:none}
 .chips::-webkit-scrollbar{display:none}
 .chip{
-  flex:0 0 auto; padding:7px 13px; border:1px solid var(--rule); border-radius:999px;
-  background:var(--card); font-family:var(--mono); font-size:11.5px; letter-spacing:.09em;
-  color:var(--ink-2); white-space:nowrap; transition:.18s
+  flex:0 0 auto; padding:9px 15px; border:0; border-radius:var(--r-pill);
+  background:var(--btn-fondo); color:var(--btn-texto);
+  font-size:14px; font-weight:600; transition:.2s
 }
-.chip[aria-selected=true]{background:var(--ink); border-color:var(--ink); color:var(--paper)}
+.chip[aria-selected=true]{background:var(--accent); color:var(--acento-texto)}
+.chip:active{transform:scale(.96)}
 .mtools{display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-top:2px}
-.mtools input{font-family:var(--serif); font-style:italic; font-size:15px; padding:6px 9px; border:1px solid var(--rule); border-radius:6px; background:var(--card); flex:1; min-width:130px}
+.mtools input{
+  font-size:15px; padding:10px 13px; border:1px solid var(--border); border-radius:var(--r-sm);
+  background:var(--surface); flex:1; min-width:130px
+}
 .iconbtn{
-  border:1px solid var(--rule); background:var(--card); border-radius:999px;
-  width:32px; height:32px; display:grid; place-items:center; color:var(--muted);
-  font-family:var(--mono); font-size:13px; flex:0 0 auto
+  border:0; border-radius:50%; width:38px; height:38px;
+  background:var(--btn-fondo); color:var(--btn-texto);
+  display:grid; place-items:center; font-size:15px; flex:0 0 auto; transition:.2s
 }
-.iconbtn:hover{border-color:var(--debt); color:var(--debt)}
+.iconbtn:hover{background:color-mix(in srgb, var(--btn-fondo) 78%, var(--text))}
+/* el rojo es solo para los que borran: antes lo heredaba también el engranaje */
+.iconbtn[aria-label^="Eliminar"]:hover,.iconbtn[aria-label="Borrar"]:hover{
+  color:var(--red); background:var(--red-soft)
+}
+.iconbtn:active{transform:scale(.92)}
 
-/* ─────────────────────────  tarjetas  ───────────────────────── */
-.tcard{background:var(--card); border:1px solid var(--rule); border-radius:var(--r); padding:16px; margin-bottom:14px; box-shadow:var(--shadow)}
-.tcard .top{display:flex; justify-content:space-between; align-items:baseline; gap:12px}
-.tcard .tname{font-family:var(--serif); font-size:19px; border:0; background:none; padding:0; width:100%; min-width:0}
-.tcard .debes{display:flex; align-items:baseline; gap:7px; margin-top:6px}
-.tcard .debes input{
-  font-family:var(--mono); font-size:13px; border:0; background:none; padding:0 0 1px;
-  width:10ch; text-align:right; border-bottom:1px dotted var(--rule); color:var(--ink-2)
+/* ── tarjetas de crédito ──────────────────────────────────────────────── */
+.tcard{
+  background:var(--surface); border-radius:var(--r-lg); padding:18px;
+  margin-bottom:12px; box-shadow:var(--sh-1); transition:box-shadow .25s
 }
-.tcard hr{border:0; border-top:1px solid var(--rule); margin:14px 0}
+.tcard:hover{box-shadow:var(--sh-2)}
+.tcard .top{display:flex; justify-content:space-between; align-items:center; gap:12px}
+.tcard .tname{font-size:18px; font-weight:600; border:0; background:none; padding:0; width:100%; min-width:0}
+.tcard .debes{display:flex; align-items:baseline; gap:8px; margin-top:8px}
+.tcard .debes input{
+  font-size:18px; font-weight:600; border:0; background:none; padding:0 0 2px;
+  width:9ch; text-align:right; border-bottom:1.5px dotted var(--border); color:var(--text-2)
+}
+.tcard hr{border:0; border-top:.5px solid var(--border-2); margin:16px 0}
 .paying{display:flex; justify-content:space-between; align-items:flex-end; gap:14px}
 .qfield{flex:1; min-width:0}
 .qfield input{
-  width:100%; border:0; border-bottom:2px solid var(--ink); background:none; padding:2px 0 4px;
-  font-family:var(--mono); font-size:26px; font-variant-numeric:tabular-nums; letter-spacing:-.01em
+  width:100%; border:0; border-bottom:2.5px solid var(--accent); background:none;
+  padding:4px 0 6px; font-size:28px; font-weight:700; font-variant-numeric:tabular-nums;
+  letter-spacing:-.02em; transition:border-color .2s
 }
-.qfield input::placeholder{color:var(--rule); font-size:15px; letter-spacing:.06em}
+.qfield input::placeholder{color:var(--text-3); font-size:16px; font-weight:400}
 .pago{text-align:right; flex:0 0 auto}
-.pago .v{font-family:var(--mono); font-size:17px; font-variant-numeric:tabular-nums; color:var(--settled)}
-.tprog{margin-top:16px}
-.tprog .bar{height:4px}
-.tprog .bar > i{background:var(--brass)}
-.tprog .cap{display:flex; justify-content:space-between; margin-top:6px}
-.tprog .cap .num{font-size:11px; color:var(--muted)}
+.pago .v{font-size:19px; font-weight:700; font-variant-numeric:tabular-nums; color:var(--accent)}
+.tprog{margin-top:18px}
+.tprog .bar{height:6px}
+.tprog .bar > i{background:var(--accent)}
+.tprog .cap{display:flex; justify-content:space-between; margin-top:8px}
+.tprog .cap .num{font-size:12px; font-weight:500; color:var(--text-3)}
 
-/* ─────────────────────────  filas genéricas (subs, categorías, metas)  ───────────────────────── */
-.block{background:var(--card); border:1px solid var(--rule); border-radius:var(--r); padding:14px 16px; margin-bottom:12px; box-shadow:var(--shadow)}
-.block.flat{box-shadow:none; background:transparent; border:0; border-bottom:1px solid var(--rule-2); border-radius:0; padding:13px 0; margin:0}
-.bline{display:flex; align-items:baseline; gap:10px}
-.bline .name{font-family:var(--serif); font-size:17px; border:0; background:none; padding:0; flex:1; min-width:0}
-.bline .v{font-family:var(--mono); font-size:15px; font-variant-numeric:tabular-nums; text-align:right}
-.bline .lead{flex:1; min-width:14px; border-bottom:1px dotted var(--rule); margin-bottom:4px}
-.bmeta{display:flex; align-items:center; gap:10px; margin-top:7px; flex-wrap:wrap}
+/* ── bloques (suscripciones, categorías, metas) ───────────────────────── */
+.block{
+  background:var(--surface); border-radius:var(--r-lg); padding:16px; margin-bottom:12px;
+  box-shadow:var(--sh-1); transition:box-shadow .25s
+}
+.block:hover{box-shadow:var(--sh-2)}
+.bline{display:flex; align-items:center; gap:10px}
+.bline .name{font-size:16.5px; font-weight:600; border:0; background:none; padding:0; flex:1; min-width:0}
+.bline .v{font-size:16px; font-weight:700; font-variant-numeric:tabular-nums; text-align:right; white-space:nowrap}
+.bline .lead{display:none}
+.bmeta{display:flex; align-items:center; gap:8px; margin-top:12px; flex-wrap:wrap}
 .chipmin{
-  border:1px solid var(--rule); background:transparent; border-radius:999px; padding:3px 10px;
-  font-family:var(--mono); font-size:10.5px; letter-spacing:.1em; text-transform:uppercase; color:var(--muted)
+  border:0; border-radius:var(--r-pill); padding:7px 13px;
+  background:var(--btn-fondo); color:var(--btn-texto);
+  font-size:12.5px; font-weight:600; transition:.2s
 }
-.chipmin[aria-pressed=true]{background:var(--ink); border-color:var(--ink); color:var(--paper)}
+.chipmin[aria-pressed=true]{background:var(--accent); color:var(--acento-texto)}
+.chipmin:active{transform:scale(.95)}
 .mini{
-  font-family:var(--mono); font-size:12px; padding:5px 8px; border:1px solid var(--rule);
-  border-radius:6px; background:var(--paper); width:9ch; text-align:right
+  font-size:15px; font-weight:600; padding:9px 11px; border:1px solid var(--border);
+  border-radius:var(--r-sm); background:var(--surface-2); width:9ch; text-align:right
 }
+.mini:focus{border-color:var(--accent); background:var(--surface)}
 .mini.wide{width:11ch}
-.mini.txt{font-family:var(--serif); font-size:14px; width:auto; text-align:left}
-.pbar{height:4px; background:var(--rule-2); border-radius:2px; overflow:hidden; margin-top:10px}
-.pbar > i{display:block; height:100%; width:0; background:var(--brass); transition:width .5s cubic-bezier(.22,1,.36,1)}
-.pbar.over > i{background:var(--debt)}
-.pcap{display:flex; justify-content:space-between; gap:10px; margin-top:6px}
-.pcap .num,.pcap .lbl{font-size:10.5px; color:var(--muted)}
+.mini.txt{font-weight:400; width:auto; text-align:left}
+.pbar{height:6px; background:var(--surface-3); border-radius:var(--r-pill); overflow:hidden; margin-top:12px}
+.pbar > i{display:block; height:100%; width:0; background:var(--accent); border-radius:inherit;
+  transition:width .6s cubic-bezier(.22,1,.36,1)}
+.pbar.over > i{background:var(--red-line)}
+.pcap{display:flex; justify-content:space-between; gap:10px; margin-top:8px}
+.pcap .lbl,.pcap .num{font-size:12.5px; font-weight:500; color:var(--text-3)}
 select{
-  font-family:var(--mono); font-size:13px; padding:7px 8px; border:1px solid var(--rule);
-  border-radius:6px; background:var(--paper); max-width:100%
+  font-size:15px; padding:10px 12px; border:1px solid var(--border); border-radius:var(--r-sm);
+  background:var(--surface-2); max-width:100%
 }
-.quick{display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-top:12px}
-.quick input{font-family:var(--mono); font-size:14px; padding:8px; border:1px solid var(--rule);
-  border-radius:6px; background:var(--paper); width:10ch; text-align:right}
-.quick select{flex:1; min-width:130px}
-.gol{display:flex; justify-content:space-between; align-items:flex-end; gap:12px; margin-top:12px}
-.gol .aporte{display:flex; gap:6px; align-items:center}
+.quick{
+  display:flex; gap:8px; align-items:center; flex-wrap:wrap; padding:14px;
+  background:var(--surface); border-radius:var(--r-lg); box-shadow:var(--sh-1)
+}
+.quick input{
+  font-size:15px; font-weight:600; padding:11px; border:1px solid var(--border);
+  border-radius:var(--r-sm); background:var(--surface-2); width:9ch; text-align:right
+}
+.quick select{flex:1; min-width:120px}
+.gol{display:flex; justify-content:space-between; align-items:flex-end; gap:12px; margin-top:14px}
+.gol .aporte{display:flex; gap:8px; align-items:center}
 
+/* pendientes (gastos previstos) */
+.pend{display:flex; align-items:center; gap:12px; padding:12px 0; position:relative}
+.pend + .pend::before{content:""; position:absolute; top:0; left:34px; right:0; height:.5px; background:var(--border-2)}
+.pend .chk{
+  width:28px; height:28px; border:2px solid var(--surface-3); border-radius:50%;
+  background:var(--surface); display:grid; place-items:center; padding:0; color:#fff;
+  font-size:15px; font-weight:700; flex:0 0 auto; transition:.2s
+}
+.pend .chk[aria-pressed=true]{background:var(--accent); border-color:var(--accent)}
+.pend .chk:active{transform:scale(.9)}
+.pend .nom{flex:1; min-width:0; font-size:16px; font-weight:500; border:0; background:none; padding:2px 0}
+.pend.hecho .nom{color:var(--text-3); text-decoration:line-through; text-decoration-color:var(--border)}
+.pend .monto{font-size:15px; font-weight:700; font-variant-numeric:tabular-nums}
+
+/* ── estado vacío ─────────────────────────────────────────────────────── */
 .empty{
-  border:1px dashed var(--rule); border-radius:var(--r); padding:20px; text-align:center;
-  font-family:var(--serif); color:var(--muted); font-size:14.5px
+  background:var(--surface); border-radius:var(--r-lg); padding:26px 20px; text-align:center;
+  color:var(--text-3); font-size:14.5px; box-shadow:var(--sh-1); line-height:1.5
 }
 
-/* ─────────────────────────  detalles / matriz  ───────────────────────── */
-details.mx{border-top:1px solid var(--rule); padding-top:14px}
+/* ── matriz de meses ──────────────────────────────────────────────────── */
+details.mx{background:var(--surface); border-radius:var(--r-lg); box-shadow:var(--sh-1); overflow:hidden}
 details.mx > summary{
-  font-family:var(--mono); font-size:11px; letter-spacing:.2em; text-transform:uppercase;
-  color:var(--muted); cursor:pointer; list-style:none; display:flex; align-items:center; gap:10px
+  padding:16px; font-size:15px; font-weight:600; cursor:pointer; list-style:none;
+  display:flex; align-items:center; gap:10px
 }
 details.mx > summary::-webkit-details-marker{display:none}
-details.mx > summary::after{content:""; flex:1; height:1px; background:var(--rule)}
-details.mx > summary .caret{transition:transform .2s}
+details.mx > summary .caret{transition:transform .25s cubic-bezier(.22,1,.36,1); color:var(--text-3)}
 details.mx[open] > summary .caret{transform:rotate(90deg)}
-.tscroll{overflow-x:auto; margin-top:16px; -webkit-overflow-scrolling:touch}
-table.mx{border-collapse:separate; border-spacing:0; min-width:100%; font-family:var(--mono)}
-table.mx th,table.mx td{padding:8px 10px; text-align:right; white-space:nowrap; border-bottom:1px solid var(--rule-2)}
-table.mx th{font-size:10.5px; letter-spacing:.13em; text-transform:uppercase; color:var(--muted); font-weight:400; border-bottom:1px solid var(--rule)}
+.tscroll{overflow-x:auto; -webkit-overflow-scrolling:touch; padding-bottom:6px}
+table.mx{border-collapse:separate; border-spacing:0; min-width:100%}
+table.mx th,table.mx td{padding:11px 12px; text-align:right; white-space:nowrap; position:relative}
+table.mx th{font-size:12px; font-weight:600; color:var(--text-3); background:var(--surface-2)}
+table.mx td{font-size:14px; font-variant-numeric:tabular-nums}
 table.mx th:first-child,table.mx td:first-child{
-  text-align:left; position:sticky; left:0; background:var(--paper); z-index:1;
-  box-shadow:1px 0 0 var(--rule-2); padding-left:0; font-family:var(--serif); font-size:14px
+  text-align:left; position:sticky; left:0; background:var(--surface); z-index:1;
+  font-weight:600; padding-left:16px
 }
-table.mx td{font-size:13.5px; font-variant-numeric:tabular-nums}
-table.mx td .e{display:block; font-size:10.5px; color:var(--muted)}
-table.mx td .q{display:block; color:var(--ink)}
-table.mx td .p{display:block; font-size:11.5px; color:var(--settled); min-height:14px}
-table.mx td.sintoma{color:var(--rule)}
-table.mx tr.tot td{background:var(--card); color:var(--ink-2); font-size:12.5px}
-table.mx tr.tot td:first-child{background:var(--card); letter-spacing:.06em}
+table.mx th:first-child{background:var(--surface-2)}
+table.mx td .e{display:block; font-size:11.5px; color:var(--text-3); font-weight:500}
+table.mx td .q{display:block; font-weight:600}
+table.mx td .p{display:block; font-size:12px; font-weight:600; color:var(--accent); min-height:15px}
+table.mx td.sintoma{color:var(--text-3)}
+table.mx tr.tot td{background:var(--surface-2); font-weight:700; font-size:13px}
+table.mx tr.tot td:first-child{background:var(--surface-2)}
 
-/* ─────────────────────────  acciones  ───────────────────────── */
-.actions{display:flex; gap:9px; flex-wrap:wrap}
+/* ── botones ──────────────────────────────────────────────────────────── */
+.actions{display:flex; gap:10px; flex-wrap:wrap; align-items:center}
 .pbtn{
-  padding:9px 15px; border:1px solid var(--rule); border-radius:999px; background:var(--card);
-  font-family:var(--mono); font-size:11px; letter-spacing:.13em; text-transform:uppercase;
-  color:var(--ink-2); transition:.18s
+  padding:11px 18px; border:0; border-radius:var(--r-pill);
+  background:var(--btn-fondo); color:var(--btn-texto);
+  font-size:14.5px; font-weight:600; transition:.2s
 }
-.pbtn:hover{border-color:var(--brass); color:var(--brass); background:var(--brass-soft)}
-.pbtn.solido{background:var(--ink); border-color:var(--ink); color:var(--paper)}
-.pbtn[disabled]{opacity:.5; cursor:default}
-.note{font-family:var(--serif); font-size:13.5px; color:var(--muted); margin:0 0 14px; max-width:62ch}
+.pbtn:hover{background:color-mix(in srgb, var(--btn-fondo) 82%, var(--text))}
+.pbtn:active{transform:scale(.97)}
+.pbtn.solido{
+  /* el de acción lleva el color elegido en Ajustes, con la letra en blanco */
+  background:var(--accent); color:var(--acento-texto)
+}
+.pbtn.solido:hover{background:var(--accent-2)}
+.pbtn[disabled]{opacity:.45; cursor:default; transform:none}
+.note{font-size:13.5px; line-height:1.5; color:var(--text-3); margin:0 0 14px; max-width:64ch}
 .alert{
-  border:1px solid var(--brass); background:var(--brass-soft); color:var(--ink-2);
-  border-radius:var(--r); padding:13px 15px; margin-bottom:20px; font-family:var(--serif); font-size:14px
+  background:var(--accent-soft); color:var(--text); border-radius:var(--r);
+  padding:15px 16px; margin-bottom:16px; font-size:14px; line-height:1.5;
+  animation:rise .4s cubic-bezier(.22,1,.36,1) both
 }
-.alert.error{border-color:var(--debt); background:var(--debt-soft); color:var(--debt)}
-.alert .actions{margin-top:11px}
+.alert.error{background:var(--red-soft); color:var(--red)}
+.alert.info{background:var(--orange-soft); box-shadow:var(--sh-1)}
+.alert .actions{margin-top:12px}
+/* sin conexión: se puede leer y mover entre pestañas, pero no editar nada,
+   porque no habría dónde guardarlo */
+body.solo-lectura main{pointer-events:none}
+body.solo-lectura #aviso{pointer-events:auto}
 
-/* ─────────────────────────  login  ───────────────────────── */
+/* ── acceso ───────────────────────────────────────────────────────────── */
 .login{min-height:100svh; display:flex; align-items:center; justify-content:center; padding:24px}
 .login .caja{width:100%; max-width:380px}
-.login .marca{border-bottom:3px double var(--ink); padding-bottom:14px; margin-bottom:26px}
-.login h1{font-family:var(--serif); font-size:27px; margin:6px 0 0; letter-spacing:-.01em}
-.login form{display:flex; flex-direction:column; gap:14px}
-.login input[type=password]{width:100%; padding:12px 13px; border:1px solid var(--rule); border-radius:var(--r); background:var(--card); font-family:var(--mono); font-size:16px}
-.login .pbtn{width:100%; text-align:center; padding:13px}
-.login .error{color:var(--debt); font-family:var(--mono); font-size:12px; min-height:16px}
-
-/* ─────────────────────────  límite de tarjetas  ───────────────────────── */
-.limbox{background:var(--card); border:1px solid var(--rule); border-radius:var(--r); padding:18px; box-shadow:var(--shadow); margin-bottom:14px}
-.limbox .big{font-family:var(--serif); font-size:clamp(30px,8vw,40px); line-height:1.05; letter-spacing:-.015em}
-.pill{display:inline-block; padding:4px 11px; border-radius:999px; font-family:var(--mono); font-size:10.5px; letter-spacing:.1em; text-transform:uppercase; background:var(--rule-2); color:var(--ink-2)}
-.pend{display:flex; align-items:center; gap:11px; padding:11px 0; border-bottom:1px solid var(--rule-2)}
-.pend .chk{width:26px; height:26px; border:1.5px solid var(--ink); border-radius:5px; background:transparent; display:grid; place-items:center; padding:0}
-.pend .chk[aria-pressed=true]{background:var(--ink); border-color:var(--ink); color:var(--paper); font-size:14px}
-.pend .nom{flex:1; min-width:0; font-family:var(--serif); font-size:16.5px}
-.pend.hecho .nom{color:var(--muted); text-decoration:line-through; text-decoration-color:var(--rule)}
-.pend .monto{font-family:var(--mono); font-size:14.5px; font-variant-numeric:tabular-nums}
-
-/* ─────────────────────────  chat  ───────────────────────── */
-.fab{
-  position:fixed; right:16px; bottom:calc(78px + env(safe-area-inset-bottom)); z-index:35;
-  display:flex; align-items:center; gap:7px; padding:11px 17px 11px 15px; border:0; border-radius:999px;
-  background:var(--ink); color:var(--paper); font-family:var(--mono); font-size:11px;
-  letter-spacing:.14em; text-transform:uppercase; box-shadow:0 8px 24px -8px rgba(0,0,0,.5)
+.login .marca{text-align:center; margin-bottom:28px}
+.login h1{font-size:28px; font-weight:700; letter-spacing:-.03em; margin:8px 0 4px}
+.login form{display:flex; flex-direction:column; gap:12px}
+.login input[type=password]{
+  width:100%; padding:15px 16px; border:1px solid var(--border); border-radius:var(--r);
+  background:var(--surface); font-size:16px
 }
-.fab:hover{transform:translateY(-1px)}
-.chat{position:fixed; inset:0; z-index:60; background:var(--paper); display:flex; flex-direction:column}
-@media (min-width:760px){
-  .chat{inset:auto 16px 16px auto; width:440px; height:min(780px,92vh);
-        border:1px solid var(--rule); border-radius:14px; box-shadow:0 24px 70px -24px rgba(0,0,0,.55)}
-}
-.chat-top{display:flex; justify-content:space-between; align-items:center; padding:13px 16px; border-bottom:3px double var(--ink)}
-.chat-top .t{font-family:var(--serif); font-size:17px}
-.chat-log{flex:1; overflow-y:auto; padding:16px; display:flex; flex-direction:column; gap:12px; -webkit-overflow-scrolling:touch}
-.bub{max-width:90%; padding:11px 14px; border-radius:13px; font-size:15px; line-height:1.48; white-space:pre-wrap; word-break:break-word}
-.bub.yo{align-self:flex-end; background:var(--ink); color:var(--paper); border-bottom-right-radius:4px}
-.bub.ia{align-self:flex-start; background:var(--card); border:1px solid var(--rule); border-bottom-left-radius:4px}
-.bub.ia strong{font-weight:600}
-.bub .herramientas{font-family:var(--mono); font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:var(--muted); margin-top:9px}
-.bub .pensando{font-family:var(--mono); font-size:11px; color:var(--muted); letter-spacing:.08em}
-.chat-in{display:flex; gap:8px; padding:12px 16px calc(14px + env(safe-area-inset-bottom)); border-top:1px solid var(--rule)}
-.chat-in input{flex:1; font-family:var(--serif); font-size:16px; padding:11px 12px; border:1px solid var(--rule); border-radius:10px; background:var(--card)}
-.sug{display:flex; flex-wrap:wrap; gap:8px}
+.login .pbtn{width:100%; padding:15px; font-size:16px}
+.login .error{color:var(--red); font-size:13px; min-height:18px; text-align:center}
 
-/* ─────────────────────────  tabbar  ───────────────────────── */
-.tabbar{position:fixed; left:0; right:0; bottom:0; z-index:30; background:var(--paper);
-  border-top:1px solid var(--rule); padding-bottom:env(safe-area-inset-bottom)}
-.tabbar .wrap{max-width:820px; margin:0 auto; display:flex}
+/* ── barra de pestañas ─────────────────────────────────────────────────
+   No es una franja pegada al borde: flota sobre el contenido, como la barra
+   de iOS 26. Una píldora de vidrio que refracta lo que pasa por debajo al
+   hacer scroll, y la pestaña activa lleva su propia cápsula dentro. */
+.tabbar{
+  position:fixed; z-index:30; left:50%; transform:translateX(-50%);
+  bottom:calc(12px + env(safe-area-inset-bottom));
+  width:min(94vw, 470px);
+  background-color:rgb(var(--vidrio-rgb) / var(--vidrio-alfa)); background-image:var(--vidrio-brillo);
+  -webkit-backdrop-filter:var(--vidrio-filtro); backdrop-filter:var(--vidrio-filtro);
+  border-radius:var(--r-pill);
+  box-shadow:var(--vidrio-sombra), var(--vidrio-filo);
+  padding:5px
+}
+.tabbar .wrap{position:relative; display:flex; gap:2px}
+/* La cápsula de selección es un solo elemento que se desliza al que elijas,
+   en vez de una cápsula dibujada dentro de cada botón. Por eso la barra no se
+   vuelve a construir al cambiar de pestaña: si se reconstruyera, el elemento
+   sería nuevo cada vez y no habría nada que animar. */
+.pastilla{
+  position:absolute; top:0; bottom:0; left:0; width:0;
+  border-radius:var(--r-pill); pointer-events:none;
+  background:color-mix(in srgb, var(--accent) 16%, transparent);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.32),
+             inset 0 0 0 .5px color-mix(in srgb, var(--accent) 28%, transparent);
+  transition:transform .44s cubic-bezier(.34,1.32,.5,1), width .44s cubic-bezier(.34,1.32,.5,1);
+  will-change:transform, width
+}
 .tabbar button{
-  flex:1; min-width:0; border:0; background:none; padding:15px 2px 16px;
-  font-family:var(--mono); font-size:10px; letter-spacing:.1em; text-transform:uppercase;
-  color:var(--muted); position:relative; transition:color .2s
+  position:relative; flex:1; min-width:0; border:0; background:none; padding:8px 2px 6px;
+  display:flex; flex-direction:column; align-items:center; gap:3px; border-radius:var(--r-pill);
+  font-size:10.5px; font-weight:600; color:var(--text-3);
+  transition:color .22s; z-index:1
 }
-.tabbar button[aria-selected=true]{color:var(--ink)}
-.tabbar button[aria-selected=true]::before{content:""; position:absolute; top:-1px; left:18%; right:18%; height:2px; background:var(--ink)}
+.tabbar button svg{width:23px; height:23px; transition:transform .28s cubic-bezier(.34,1.56,.64,1)}
+.tabbar button[aria-selected=true]{color:var(--accent)}
+.tabbar button[aria-selected=true] svg{transform:translateY(-1px) scale(1.06)}
+.tabbar button:active svg{transform:scale(.88)}
 
-@media (max-width:440px){
-  .eyebrow,.lbl{letter-spacing:.1em; font-size:9.5px}
-  .mh-main{gap:10px}
-  .mh-main > div:first-child{min-width:0}
-  .display{font-size:clamp(25px,7.2vw,32px)}
-  .mh-side .num{font-size:13.5px}
-  .mh-month{font-size:14px}
-  .tabbar button{font-size:9px; letter-spacing:.06em}
+/* ── chat (es la pantalla de inicio) ──────────────────────────────────── */
+.chat-page{display:flex; flex-direction:column}
+.chat-log{display:flex; flex-direction:column; gap:12px; min-height:calc(100svh - 310px)}
+.bub{
+  max-width:90%; padding:13px 16px; border-radius:20px; font-size:15px; line-height:1.48;
+  white-space:pre-wrap; word-break:break-word; animation:pop .28s cubic-bezier(.22,1,.36,1) both
 }
+.bub.yo{align-self:flex-end; background:var(--accent); color:var(--acento-texto); border-bottom-right-radius:6px}
+.bub.ia{align-self:flex-start; background:var(--surface); border-bottom-left-radius:6px; box-shadow:var(--sh-1)}
+.bub.ia strong{font-weight:700}
+.bub .herramientas{
+  font-size:11px; font-weight:600; color:var(--text-3); margin-top:10px;
+  padding-top:8px; border-top:.5px solid var(--border-2)
+}
+.bub .pensando{font-size:13px; color:var(--text-3); display:inline-flex; align-items:center; gap:7px}
+.bub .pensando::before{
+  content:""; width:7px; height:7px; border-radius:50%; background:var(--accent);
+  animation:latido 1.1s ease-in-out infinite
+}
+@keyframes latido{0%,100%{opacity:.35; transform:scale(.8)} 50%{opacity:1; transform:scale(1.15)}}
+.chat-in{
+  position:sticky; bottom:calc(94px + env(safe-area-inset-bottom)); z-index:6;
+  display:flex; gap:8px; padding:9px; margin-top:8px;
+  background-color:rgb(var(--vidrio-rgb) / var(--vidrio-alfa)); background-image:var(--vidrio-brillo);
+  -webkit-backdrop-filter:var(--vidrio-filtro); backdrop-filter:var(--vidrio-filtro);
+  border:0; border-radius:var(--r-pill); box-shadow:var(--vidrio-sombra), var(--vidrio-filo)
+}
+.chat-in input{flex:1; min-width:0; font-size:16px; padding:11px 15px; border:0; background:transparent}
+.chat-in input:focus{outline:none}
+.sug{display:flex; flex-direction:column; gap:8px; align-items:flex-start}
+.sug .pbtn{
+  background:var(--surface); box-shadow:var(--sh-1); color:var(--accent);
+  text-align:left; width:100%
+}
+.sug .pbtn:hover{background:var(--accent-soft)}
+
+/* ── ajustes ──────────────────────────────────────────────────────────── */
+.gear{padding:0; display:grid; place-items:center}
+.gear svg{width:19px; height:19px}
+.gear[data-on=true]{color:var(--accent); background:var(--accent-soft)}
+.setrow{
+  display:flex; align-items:center; justify-content:space-between; gap:14px;
+  padding:13px 0; position:relative
+}
+.setrow + .setrow::before{content:""; position:absolute; top:0; left:0; right:0; height:.5px; background:var(--border-2)}
+.setrow:first-child{padding-top:4px}
+.setrow:last-child{padding-bottom:4px}
+.setk{font-size:15px; font-weight:500; min-width:0}
+.setk .sub{display:block; font-size:12.5px; color:var(--text-3); margin-top:2px}
+.setv{font-size:15px; font-weight:600; color:var(--text-2); display:flex; align-items:center; gap:7px}
+/* ── deslizador (intensidad del vidrio) ───────────────────────────────────
+   Barra gruesa con relleno, como los del Centro de Control. El relleno se
+   pinta con un degradado duro en --pct, que mueve el propio control. */
+.rango{
+  -webkit-appearance:none; appearance:none; flex:1 1 150px; min-width:130px;
+  height:30px; margin:0; background:transparent; cursor:pointer
+}
+.rango::-webkit-slider-runnable-track{
+  height:30px; border-radius:var(--r-pill);
+  background:linear-gradient(90deg, var(--text) var(--pct,60%),
+             color-mix(in srgb, var(--surface-3) 78%, transparent) var(--pct,60%));
+  box-shadow:inset 0 0 0 .5px var(--border-2)
+}
+.rango::-webkit-slider-thumb{
+  -webkit-appearance:none; width:26px; height:26px; margin-top:2px; border-radius:50%;
+  background:#fff; box-shadow:0 1px 4px rgba(0,0,0,.3), inset 0 0 0 .5px rgba(0,0,0,.06)
+}
+.rango::-moz-range-track{
+  height:30px; border-radius:var(--r-pill);
+  background:color-mix(in srgb, var(--surface-3) 78%, transparent)
+}
+.rango::-moz-range-progress{height:30px; border-radius:var(--r-pill); background:var(--text)}
+.rango::-moz-range-thumb{width:26px; height:26px; border:0; border-radius:50%; background:#fff}
+.rango:focus-visible{outline:2.5px solid var(--accent); outline-offset:4px; border-radius:var(--r-pill)}
+/* la fila que lleva el deslizador necesita el ancho completo */
+.setrow:has(.rango){flex-wrap:wrap; row-gap:10px}
+.setrow:has(.rango) .setk{flex:1 1 100%}
+
+/* ── selector de color ───────────────────────────────────────────────────
+   Tira de muestras como la del sistema: la elegida lleva un anillo con un
+   hueco y su nombre debajo, así que la fila crece sola para que quepa. */
+.paleta{display:flex; gap:9px; flex-wrap:wrap; align-items:flex-start; padding-bottom:18px}
+.muestra{
+  position:relative; border:0; background:none; padding:0;
+  display:flex; align-items:center; justify-content:center;
+  font-size:11.5px; font-weight:600; color:var(--text-2)
+}
+.muestra .punto{
+  width:28px; height:28px; border-radius:50%; display:block; background:var(--c);
+  box-shadow:inset 0 0 0 .5px rgba(0,0,0,.16), 0 1px 2px rgba(0,0,0,.16);
+  transition:transform .2s ease
+}
+.muestra[aria-pressed=true] .punto{
+  box-shadow:inset 0 0 0 .5px rgba(0,0,0,.16), 0 1px 2px rgba(0,0,0,.16),
+             0 0 0 2px var(--bg), 0 0 0 4px var(--a, var(--c))
+}
+/* El nombre sale del flujo: si no, la muestra elegida se ensancha y la tira
+   se parte en dos filas en el teléfono. */
+.muestra .nombre{
+  display:none; position:absolute; top:calc(100% + 5px); left:50%;
+  transform:translateX(-50%); white-space:nowrap
+}
+.muestra[aria-pressed=true] .nombre{display:block}
+.muestra:active .punto{transform:scale(.92)}
+.setrow:has(.paleta){flex-wrap:wrap; row-gap:8px}
+.setrow:has(.paleta) .setk{flex:1 1 100%}
+
+/* el selector de resalte: el punto de color pegado al desplegable */
+.setv select{
+  -webkit-appearance:none; appearance:none; border:0; background:transparent;
+  font-size:15px; font-weight:600; color:var(--text-2); padding:4px 22px 4px 2px;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'><path d='M2.5 4.5 6 8l3.5-3.5' fill='none' stroke='%238E8E93' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+  background-repeat:no-repeat; background-position:right 2px center
+}
+.punto-resalte{
+  width:16px; height:16px; border-radius:50%; display:block; flex:0 0 auto;
+  background:var(--c, var(--accent));
+  box-shadow:inset 0 0 0 .5px rgba(0,0,0,.16)
+}
+/* el texto que seleccionas se pinta con el color de resalte elegido */
+::selection{background:color-mix(in srgb, var(--resalte, var(--accent)) 45%, transparent)}
+.seg{
+  display:flex; gap:2px; padding:3px; border-radius:var(--r-sm);
+  background-color:color-mix(in srgb, var(--surface-2) 55%, transparent);
+  background-image:var(--vidrio-brillo);
+  box-shadow:var(--vidrio-filo)
+}
+.seg button{
+  border:0; background:none; padding:8px 14px; border-radius:var(--r-xs);
+  font-size:13.5px; font-weight:600; color:var(--text-2); transition:.2s
+}
+.seg button[aria-pressed=true]{
+  background-color:color-mix(in srgb, var(--surface) 72%, transparent); color:var(--accent);
+  box-shadow:var(--vidrio-filo)
+}
+
+/* ── filas de suscripción (dentro de Mes) ─────────────────────────────── */
+.subrow{display:flex; flex-wrap:wrap; align-items:center; gap:8px; padding:12px 0; position:relative}
+.subrow + .subrow::before{content:""; position:absolute; top:0; left:0; right:0; height:.5px; background:var(--border-2)}
+.subrow .name{flex:1 1 100%; font-size:16px; font-weight:600; border:0; background:none; padding:0}
+@media (min-width:560px){ .subrow .name{flex:1 1 auto} }
+.subrow .vacio{flex:1}
+
+/* ── límite ───────────────────────────────────────────────────────────── */
+.limbox{
+  background:var(--surface); border-radius:var(--r-lg); padding:22px;
+  box-shadow:var(--sh-1); margin-bottom:12px; position:relative; overflow:hidden
+}
+.limbox::before{
+  content:""; position:absolute; inset:0 0 auto 0; height:4px;
+  background:linear-gradient(90deg,var(--accent),var(--purple))
+}
+.limbox .big{font-size:clamp(34px,10vw,46px); font-weight:700; letter-spacing:-.035em; margin-top:4px}
+.pill{
+  display:inline-block; padding:5px 12px; border-radius:var(--r-pill); font-size:12px;
+  font-weight:600; background:var(--surface-2); color:var(--text-2)
+}
+
+/* ── móvil ────────────────────────────────────────────────────────────── */
+@media (max-width:520px){
+  .bline:has(.chipmin){flex-wrap:wrap}
+  .bline:has(.chipmin) .name{flex:1 1 100%; margin-bottom:8px}
+}
+@media (max-width:430px){
+  .row{--tick:40px; --hueco:9px; --lado:12px}
+  .row .name{font-size:16.5px}
+  .row .amt{font-size:16px; width:8ch}
+  .tabbar button{font-size:10px}
+  .tabbar button svg{width:23px; height:23px}
+  .display{font-size:clamp(28px,8.4vw,34px)}
+  .qfield input{font-size:25px}
+}
+
+/* ── impresión ────────────────────────────────────────────────────────── */
 @media print{
-  :root{--paper:#fff; --card:#fff; --ink:#000; --ink-2:#333; --muted:#6b6b6b; --rule:#b5b5b5;
-        --rule-2:#ddd; --brass:#555; --brass-soft:#fff; --settled:#186b3a; --settled-soft:#fff;
-        --debt:#a02020; --debt-soft:#fff; --shadow:none}
-  body::before,.tabbar,.addbtn,.actions,.more,.tick,.iconbtn,.mtools,.chips,.sync,.quick,details.mx > summary{display:none}
+  :root{--bg:#fff; --surface:#fff; --surface-2:#fff; --surface-3:#eee; --text:#000;
+        --text-2:#222; --text-3:#666; --border:#bbb; --border-2:#ddd; --sh-1:none; --sh-2:none;
+        --vidrio-rgb:255 255 255; --vidrio-alfa:1; --vidrio-filtro:none;
+        --vidrio-brillo:none; --vidrio-filo:none; --vidrio-sombra:none;
+        --btn-fondo:#FFFFFF; --btn-texto:#000000; --acento-texto:#FFFFFF;
+        --resalte:transparent}
+  .tabbar,.fab,.addbtn,.actions,.more,.tick,.iconbtn,.mtools,.chips,.sync,.quick,
+  details.mx > summary,.chat,.limbox::before{display:none !important}
   body{background:#fff; padding:0}
-  .masthead{position:static; border-bottom:2px solid #000}
-  main{padding:18px 0 0; max-width:none}
-  section{break-inside:avoid; margin-bottom:22px}
-  .row{grid-template-columns:1fr auto; padding:9px 0}
-  .row .who{grid-column:1} .row .amt{grid-column:2} .row .details{display:none} .row.done{background:none}
-  .bar,.pbar{border:1px solid var(--rule)}
-  .tcard,.block{box-shadow:none; break-inside:avoid}
-  table.mx th:first-child,table.mx td:first-child{background:#fff}
-  .tscroll{overflow:visible} table.mx{min-width:0; font-size:10px}
+  .masthead{position:static; backdrop-filter:none; border-bottom:2px solid #000}
+  main{padding:16px 0 0; max-width:none}
+  section{break-inside:avoid; margin-bottom:18px}
+  .card,.ledger,.tcard,.block,.limbox{box-shadow:none; border:.5px solid var(--border)}
+  .row{grid-template-columns:1fr auto; padding:8px 0}
+  .row .who{grid-column:1} .row .amt{grid-column:2} .row .details{display:none}
+  .row + .row::before{display:none} .row.done{background:none}
+  .tscroll{overflow:visible}
 }
 </style>
 </head>
 <body>
 
 <div id="app"></div>
-<div id="chat-root"></div>
 
 <script>
 "use strict";
 const $ = s => document.querySelector(s);
 const $$ = s => [...document.querySelectorAll(s)];
 let state = null, rev = 0, authed = false;
+/* sin conexión: se muestra la última copia y no se deja editar, porque no
+   habría dónde guardar los cambios */
+let soloLectura = false, visto = 0;
 let sync = "idle", errorMsg = "", conflict = false, exito = "";
-let tab = localStorage.getItem("cofre_tab") || "mes";
+const TABS_VALIDAS = ["chat", "mes", "gastos", "metas", "limite", "tarjetas", "ajustes"];
+let tab = localStorage.getItem("cofre_tab") || "chat";
+/* si venía guardada una pestaña que ya no existe (o basura), arranca en el chat
+   en vez de quedarse en blanco */
+if (!TABS_VALIDAS.includes(tab)) tab = "chat";
+/* los atajos del icono (mantener pulsado) abren una pestaña concreta */
+const tabURL = new URLSearchParams(location.search).get("tab");
+if (TABS_VALIDAS.includes(tabURL)) { tab = tabURL; localStorage.setItem("cofre_tab", tab); }
 let abiertos = {};
 let mxAbierto = window.innerWidth >= 760;
 let selMes = localStorage.getItem("cofre_selmes") || null;
 let pending = null, timer = null, ocupado = false;
 
+const SVG = (d, extra = "") => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"'
+  + ' stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">' + d + extra + '</svg>';
+const ICONOS = {
+  mes: SVG('<path d="M3.5 10.4 12 3.5l8.5 6.9"/><path d="M5.6 9.4V20a1 1 0 0 0 1 1h10.8a1 1 0 0 0 1-1V9.4"/>'
+         + '<path d="M9.7 21v-5.3h4.6V21"/>'),
+  subs: SVG('<path d="M17 2.6 21 6.6l-4 4"/><path d="M3.6 11.6V10a3.4 3.4 0 0 1 3.4-3.4h14"/>'
+          + '<path d="M7 21.4 3 17.4l4-4"/><path d="M20.4 12.4V14a3.4 3.4 0 0 1-3.4 3.4H3"/>'),
+  gastos: SVG('<path d="M20.6 13.4 13.4 20.6a1.6 1.6 0 0 1-2.3 0L3.6 13V3.6H13l7.6 7.6a1.6 1.6 0 0 1 0 2.2Z"/>'
+            + '<circle cx="8.1" cy="8.1" r="1.3"/>'),
+  metas: SVG('<circle cx="12" cy="12" r="8.6"/><circle cx="12" cy="12" r="4.1"/>'
+           + '<circle cx="12" cy="12" r="1" fill="currentColor" stroke="none"/>'),
+  limite: SVG('<path d="M3.9 18.5a8.6 8.6 0 1 1 16.2 0"/><path d="M12 18.5l4.3-6.7"/>'
+            + '<circle cx="12" cy="18.5" r="1.5" fill="currentColor" stroke="none"/>'),
+  tarjetas: SVG('<rect x="2.6" y="5.2" width="18.8" height="13.6" rx="3.2"/><path d="M2.6 10.1h18.8"/>'
+              + '<path d="M6.6 14.6h3.2"/>'),
+  chat: SVG('<path d="M20.8 11.6a8.2 8.2 0 0 1-8.8 8.2 9 9 0 0 1-2.6-.4L4.2 21l1.4-4.2a8.2 8.2 0 0 1-1.6-5.2 8.2 8.2 0 0 1 8.6-8.2 8.2 8.2 0 0 1 8.2 8.2Z"/>'),
+  ajustes: SVG('<circle cx="12" cy="12" r="3"/>'
+             + '<path d="M19.1 14.6a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-1.8-.3 1.6 1.6 0 0 0-1 1.5v.2a2 2 0 1 1-4 0v-.1a1.6 1.6 0 0 0-1-1.5 1.6 1.6 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.6 1.6 0 0 0 .3-1.8 1.6 1.6 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.6 1.6 0 0 0 1.5-1 1.6 1.6 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.6 1.6 0 0 0 1.8.3H9a1.6 1.6 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.6 1.6 0 0 0 1 1.5 1.6 1.6 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0-.3 1.8V9a1.6 1.6 0 0 0 1.5 1h.2a2 2 0 1 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1Z"/>'),
+};
 const PESTANAS = [
-  ["mes", "Mes"], ["subs", "Subs"], ["gastos", "Gastos"], ["metas", "Metas"],
+  ["chat", "Chat"], ["mes", "Mes"], ["gastos", "Gastos"], ["metas", "Metas"],
   ["limite", "Límite"], ["tarjetas", "Tarjetas"],
 ];
 
 /* ─────────────────────────── red ─────────────────────────── */
 async function api(path, opts = {}) {
-  const r = await fetch(path, {
-    credentials: "same-origin",
-    headers: { "content-type": "application/json", ...(opts.headers || {}) },
-    ...opts,
-  });
-  let data = null;
-  try { data = await r.json(); } catch {}
-  return { status: r.status, data };
+  try {
+    const r = await fetch(path, {
+      credentials: "same-origin",
+      headers: { "content-type": "application/json", ...(opts.headers || {}) },
+      ...opts,
+    });
+    let data = null;
+    try { data = await r.json(); } catch {}
+    return { status: r.status, data };
+  } catch {
+    /* sin red. El 0 no es un código real, así que nadie lo confunde con éxito.
+       Antes esto lanzaba y dejaba la pantalla en blanco al abrir sin señal. */
+    return { status: 0, data: null };
+  }
+}
+
+/* Copia local: permite abrir la app sin señal y ver los últimos números. */
+function guardarCopia() {
+  try { localStorage.setItem("cofre_copia",
+    JSON.stringify({ rev, state, version: window.__version || "", cuando: Date.now() })); } catch {}
+}
+function leerCopia() {
+  try {
+    const c = JSON.parse(localStorage.getItem("cofre_copia") || "null");
+    return c && c.state ? c : null;
+  } catch { return null; }
+}
+/* deja el estado recién llegado del servidor y sale del modo sin conexión */
+function aplicarEstado(data) {
+  rev = data.rev; state = data.state; completar();
+  window.__version = data.version || "";
+  sync = "saved"; errorMsg = ""; conflict = false; soloLectura = false;
+  guardarCopia();
+  /* Las preferencias pueden venir de otro aparato (o haber cambiado allí), así
+     que se vuelven a aplicar cada vez que llega el estado. */
+  aplicarVidrio(); aplicarAcento();
+}
+/* La primera vez que abres en un aparato que ya tenía ajustes elegidos, esos
+   ajustes suben a tus datos para que no se queden solo aquí. */
+function subirPrefsLocales() {
+  if (!state || state.prefs) return;
+  const p = {};
+  for (const k of CLAVES_PREF) {
+    const l = localStorage.getItem("cofre_" + k);
+    if (l) p[k] = l;
+  }
+  state.prefs = p;
+  if (Object.keys(p).length) programarGuardado();
 }
 
 async function hidratar() {
   const { status, data } = await api("/api/state");
-  if (status === 401) { authed = false; sync = "idle"; render(); return; }
-  if (status !== 200) { errorMsg = "No pude leer los datos (" + status + ")"; sync = "error"; render(); return; }
-  authed = true; rev = data.rev; state = data.state; completar();
-  sync = "saved"; errorMsg = ""; conflict = false;
+  if (status === 401) { authed = false; soloLectura = false; sync = "idle"; render(); return; }
+  if (status === 200) { authed = true; aplicarEstado(data); subirPrefsLocales(); render(); return; }
+  /* Sin red: si hay copia local, se muestra en modo consulta. */
+  const copia = leerCopia();
+  if (copia && status === 0) {
+    authed = true; rev = 0; state = copia.state; completar();
+    window.__version = copia.version || "";
+    sync = "offline"; errorMsg = ""; conflict = false; soloLectura = true; visto = copia.cuando;
+    render(); return;
+  }
+  authed = false; soloLectura = false; sync = "error";
+  errorMsg = status === 0
+    ? "Sin conexión. Abre la app una vez con señal para poder consultarla después."
+    : "No pude leer los datos (" + status + ")";
   render();
 }
 function programarGuardado() {
@@ -418,7 +867,7 @@ function programarGuardado() {
   clearTimeout(timer); timer = setTimeout(guardar, 550);
 }
 async function guardar() {
-  if (!pending || !state) return;
+  if (!pending || !state || soloLectura) return;
   try {
     const { status, data } = await api("/api/state", { method: "PUT", body: JSON.stringify({ rev, state }) });
     if (status === 200) { rev = data.rev; pending = false; sync = "saved"; errorMsg = ""; conflict = false; }
@@ -440,8 +889,9 @@ setInterval(refrescar, 45000);
 async function refrescar() {
   if (!authed || pending || ocupado || document.activeElement?.matches("input,select")) return;
   const { status, data } = await api("/api/state");
-  if (status !== 200 || data.rev === rev) return;
-  rev = data.rev; state = data.state; conflict = false; sync = "saved"; pintarSync(); render();
+  /* al recuperar la señal, el primer refresco devuelve la app a la vida */
+  if (status !== 200 || (!soloLectura && data.rev === rev)) return;
+  aplicarEstado(data); render();
 }
 
 /* ─────────────────────────── cálculo ─────────────────────────── */
@@ -655,6 +1105,20 @@ function viewMes() {
     </div>`;
   }).join("");
 
+  const subsRows = state.suscripciones.map(x => `
+    <div class="subrow">
+      <input class="name" value="${esc(x.nombre)}" data-sub="${x.id}" data-field="nombre"
+             spellcheck="false" autocomplete="off" aria-label="Nombre de la suscripción">
+      <input class="mini wide num" ${NUM} value="${fmtRaw(x.monto)}" data-sub="${x.id}"
+             data-field="monto" aria-label="Monto">
+      <button class="chipmin" data-moneda="${x.id}" aria-pressed="${x.moneda === "USD"}">${x.moneda}</button>
+      <button class="chipmin" data-medio-sub="${x.id}"
+              aria-pressed="${x.medio === "tarjeta"}">${x.medio === "tarjeta" ? "tarjeta" : "efectivo"}</button>
+      <span class="num small" data-out="sub-gtq:${x.id}">—</span>
+      <span class="vacio"></span>
+      <button class="iconbtn" data-del-sub="${x.id}" aria-label="Eliminar">✕</button>
+    </div>`).join("");
+
   return `
   <section data-anim>
     <div class="h-sec">El mes</div>
@@ -713,6 +1177,14 @@ function viewMes() {
     </div>
   </section>
 
+  <section data-anim style="--d:.13s">
+    <div class="h-sec">Suscripciones — <span class="sub" data-out="subs-nota">—</span></div>
+    ${state.suscripciones.length ? `<div class="card" style="padding:6px 16px">${subsRows}</div>`
+      : `<div class="empty">Aún no tienes suscripciones.<br>Agrega las que se te cobran cada mes,
+         en quetzales o en dólares.</div>`}
+    <button class="addbtn" data-add="sub">+ Agregar suscripción</button>
+  </section>
+
   <section data-anim style="--d:.15s">
     <div class="h-sec">Tarjetas</div>
     <div class="summary">
@@ -746,76 +1218,10 @@ function viewMes() {
     </div>` : ""}
   </section>
 
-  <section data-anim style="--d:.25s">
-    <div class="h-sec">Datos</div>
-    <p class="note">Todo se guarda en la base del servidor: lo que anotes aquí lo ves igual en el
-      teléfono. El respaldo es un archivo por si quieres tus datos fuera del servidor.</p>
-    <div class="actions">
-      <button class="pbtn" data-action="export">Descargar respaldo</button>
-      <button class="pbtn" data-action="import">Restaurar</button>
-      <button class="pbtn" data-action="print">Imprimir</button>
-      <button class="pbtn" data-action="logout">Salir</button>
-    </div>
-    <input type="file" id="file-import" accept="application/json" hidden>
-  </section>`;
+`;
 }
 
 /* ── pestaña SUSCRIPCIONES ── */
-function viewSubs() {
-  const s = calcSuscripciones();
-  const lista = state.suscripciones.map(x => `
-    <div class="block flat">
-      <div class="bline">
-        <input class="name" value="${esc(x.nombre)}" data-sub="${x.id}" data-field="nombre"
-               spellcheck="false" autocomplete="off" aria-label="Nombre de la suscripción">
-        <input class="mini wide num" ${NUM} value="${fmtRaw(x.monto)}"
-               data-sub="${x.id}" data-field="monto" aria-label="Monto">
-        <button class="iconbtn" data-del-sub="${x.id}" aria-label="Eliminar">✕</button>
-      </div>
-      <div class="bmeta">
-        <button class="chipmin" data-moneda="${x.id}" aria-pressed="${x.moneda === "USD"}">${x.moneda}</button>
-        <span class="lbl">cobra el</span>
-        <input class="mini txt" style="width:5ch" value="${esc(x.dia)}" data-sub="${x.id}" data-field="dia"
-               placeholder="—" aria-label="Día del cobro">
-        <button class="chipmin" data-activa="${x.id}" aria-pressed="${x.activa}">${x.activa ? "activa" : "pausada"}</button>
-        <button class="chipmin" data-medio-sub="${x.id}"
-                aria-pressed="${x.medio === "tarjeta"}">${x.medio === "tarjeta" ? "tarjeta" : "efectivo"}</button>
-        <span class="lead" style="flex:1; border-bottom:1px dotted var(--rule); margin-bottom:4px"></span>
-        <span class="num small" data-out="sub-gtq:${x.id}">—</span>
-      </div>
-    </div>`).join("");
-
-  return `
-  <section data-anim>
-    <div class="h-sec">Suscripciones del mes</div>
-    <div class="summary">
-      <div class="srow"><span class="k">Total activo</span><span class="lead"></span>
-        <span class="v num" data-out="subs-total">—</span></div>
-      <div class="srow"><span class="k">Activas <span class="sub" data-out="subs-conteo">—</span></span>
-        <span class="lead"></span><span class="v num" data-out="subs-pausadas">—</span></div>
-      <div class="srow"><span class="k">Tipo de cambio</span><span class="lead"></span>
-        <span class="v">
-          <span class="lbl">1 USD =</span>
-          <input class="mini wide num" ${NUM} data-dec="4" value="${fmtRaw(state.usdGtq, 4)}" data-meta="usdGtq"
-                 aria-label="Quetzales por dólar">
-          <span class="lbl">GTQ</span>
-        </span></div>
-    </div>
-    <div class="actions" style="margin-top:12px">
-      <button class="pbtn" data-action="tasa">Traer el tipo de cambio actual</button>
-    </div>
-  </section>
-
-  <section data-anim style="--d:.07s">
-    <div class="h-sec">Cobros recurrentes</div>
-    ${state.suscripciones.length ? lista :
-      `<div class="empty">Aún no tienes suscripciones.<br>
-        Agrega las que se te cobran cada mes, en quetzales o en dólares.</div>`}
-    <button class="addbtn" data-add="sub">+ Agregar suscripción</button>
-  </section>`;
-}
-
-/* ── pestaña GASTOS (categorías y consumo) ── */
 function viewGastos() {
   const c = calcCategorias();
   const filas = c.filas.map(f => `
@@ -839,7 +1245,7 @@ function viewGastos() {
   const opciones = state.categorias.map(x => `<option value="${x.id}">${esc(x.nombre)}</option>`).join("");
   const consumos = c.delMes.slice(0, 12).map(g => {
     const cat = state.categorias.find(x => x.id === g.categoriaId);
-    return `<div class="bline" style="padding:9px 0; border-bottom:1px solid var(--rule-2)">
+    return `<div class="bline" style="padding:11px 0; position:relative">
       <span class="num small" style="width:9ch">${esc((g.fecha || "").slice(5))}</span>
       <span style="flex:1; min-width:0">${esc(cat ? cat.nombre : "—")}
         ${g.nota ? `<span class="small"> · ${esc(g.nota)}</span>` : ""}</span>
@@ -884,7 +1290,7 @@ function viewGastos() {
 
   <section data-anim style="--d:.18s">
     <div class="h-sec">Anotado en ${esc(mesCorto(state.mes))}</div>
-    ${c.delMes.length ? consumos :
+    ${c.delMes.length ? `<div class="card" style="padding:6px 16px">${consumos}</div>` :
       `<div class="empty">Nada anotado este mes.</div>`}
   </section>`;
 }
@@ -1122,7 +1528,8 @@ function viewLimite() {
 
   <section data-anim style="--d:.06s">
     <div class="h-sec">Gastos previstos</div>
-    ${c.previstosMes.length ? lista : `<div class="empty">Anota aquí lo que ya sabes que vas a cargar
+    ${c.previstosMes.length ? `<div class="card" style="padding:0 16px">${lista}</div>`
+      : `<div class="empty">Anota aquí lo que ya sabes que vas a cargar
       a la tarjeta: una cena, el súper, gasolina. Se suman al pago del próximo mes automáticamente.</div>`}
     <div class="quick">
       <input class="mini txt" style="flex:1; min-width:120px" placeholder="¿Qué vas a gastar?" data-previsto-nombre>
@@ -1146,8 +1553,145 @@ function viewLimite() {
   </section>`;
 }
 
-const VISTAS = { mes: viewMes, subs: viewSubs, gastos: viewGastos, metas: viewMetas,
-                 limite: viewLimite, tarjetas: viewTarjetas };
+function viewChat() {
+  return `
+  <section data-anim>
+    <div class="chat-page">
+      <div class="chat-log" id="chat-log">
+        ${chatMsgs.length ? chatMsgs.map(burbuja).join("") : `
+        <div class="bub ia">Soy tu asistente. Veo tus números en vivo y puedo cambiarlos: marcar pagos, anotar gastos, ajustar presupuestos y límites. Pregúntame lo que necesites.</div>
+        <div class="sug">
+          ${["¿Cuánto puedo gastar todavía?", "¿Cómo voy este mes?", "¿Qué me conviene pagar primero?",
+             "¿Voy bien con mis metas?", "¿En qué se me está yendo el dinero?"].map(x =>
+            `<button class="pbtn" data-chat-sug="${esc(x)}">${esc(x)}</button>`).join("")}
+        </div>`}
+      </div>
+      <form class="chat-in" data-chat-form>
+        <input name="texto" placeholder="Escribe tu pregunta…" autocomplete="off"
+               aria-label="Tu pregunta" ${enviando ? "disabled" : ""}>
+        <button class="pbtn solido" type="submit" ${enviando ? "disabled" : ""}>Enviar</button>
+      </form>
+    </div>
+  </section>`;
+}
+
+function viewAjustes() {
+  const t = localStorage.getItem("cofre_tema") || "sistema";
+  const oscuro = esOscuro();
+  const ac = acentoElegido(), res = resalteElegido();
+  const n = k => state[k].length;
+  return `
+  <section data-anim>
+    <div class="h-sec">Apariencia</div>
+    <div class="card">
+      <div class="setrow">
+        <span class="setk">Tema<span class="sub">Se guarda solo en este dispositivo</span></span>
+        <span class="seg">
+          ${[["sistema", "Sistema"], ["claro", "Claro"], ["oscuro", "Oscuro"]].map(([k, txt]) =>
+            `<button data-tema-sel="${k}" aria-pressed="${t === k}">${txt}</button>`).join("")}
+        </span>
+      </div>
+      <div class="setrow">
+        <span class="setk">Vidrio<span class="sub">La transparencia: cuánto se ve a través. En 0 queda opaco; arriba del todo, casi solo cristal.</span></span>
+        <input class="rango" type="range" min="0" max="100" step="5" value="${vidrioN()}"
+               data-vidrio aria-label="Vidrio" style="--pct:${vidrioN()}%">
+      </div>
+      <div class="setrow">
+        <span class="setk">Blur<span class="sub">Cuánto se ve borroso lo que pasa por detrás. En 0 se lee nítido a través del cristal.</span></span>
+        <input class="rango" type="range" min="0" max="100" step="5" value="${blurN()}"
+               data-desenfoque aria-label="Blur" style="--pct:${blurN()}%">
+      </div>
+      <div class="setrow">
+        <span class="setk">Color<span class="sub">Tiñe los botones de acción, las pestañas, las barras y la burbuja del chat.</span></span>
+        <div class="paleta">
+          ${ORDEN_ACENTOS.map(k => {
+            const c = ACENTOS[k][oscuro ? "d" : "l"][0];
+            return `<button class="muestra" data-acento="${k}" aria-pressed="${ac === k}"
+                      aria-label="${ACENTOS[k].nombre}" style="--c:${k === "multicolor" ? ARCOIRIS : c};--a:${c}">
+                      <span class="punto"></span><span class="nombre">${ACENTOS[k].nombre}</span>
+                    </button>`;
+          }).join("")}
+        </div>
+      </div>
+      <div class="setrow">
+        <span class="setk">Color de resalte<span class="sub">El fondo de lo que seleccionas con el dedo.</span></span>
+        <span class="setv">
+          <i class="punto-resalte" style="--c:${ACENTOS[res][oscuro ? "d" : "l"][0]}"></i>
+          <select data-resalte-select aria-label="Color de resalte">
+            ${ORDEN_ACENTOS.map(k => `<option value="${k}"${res === k ? " selected" : ""}>${ACENTOS[k].nombre}</option>`).join("")}
+          </select>
+        </span>
+      </div>
+    </div>
+  </section>
+
+  <section data-anim style="--d:.05s">
+    <div class="h-sec">Moneda</div>
+    <div class="card">
+      <div class="setrow">
+        <span class="setk">Tipo de cambio<span class="sub">Para las suscripciones en dólares</span></span>
+        <span class="setv">
+          <span class="lbl">1 USD =</span>
+          <input class="mini wide num" ${NUM} data-dec="4" value="${fmtRaw(state.usdGtq, 4)}"
+                 data-meta="usdGtq" aria-label="Quetzales por dólar">
+          <span class="lbl">GTQ</span>
+        </span>
+      </div>
+      <div class="setrow">
+        <span class="setk">Consultarlo ahora</span>
+        <button class="pbtn" data-action="tasa">Traer el actual</button>
+      </div>
+    </div>
+  </section>
+
+  <section data-anim style="--d:.1s">
+    <div class="h-sec">Datos</div>
+    <div class="card">
+      <div class="setrow">
+        <span class="setk">Respaldo<span class="sub">Un archivo con todo, por si acaso</span></span>
+        <button class="pbtn" data-action="export">Descargar</button>
+      </div>
+      <div class="setrow">
+        <span class="setk">Restaurar<span class="sub">Reemplaza todo con un respaldo</span></span>
+        <button class="pbtn" data-action="import">Elegir archivo</button>
+      </div>
+      <div class="setrow">
+        <span class="setk">Imprimir<span class="sub">La pantalla en la que estás</span></span>
+        <button class="pbtn" data-action="print">Imprimir</button>
+      </div>
+      <input type="file" id="file-import" accept="application/json" hidden>
+    </div>
+  </section>
+
+  <section data-anim style="--d:.15s">
+    <div class="h-sec">Sesión</div>
+    <div class="card">
+      <div class="setrow">
+        <span class="setk">Cerrar sesión<span class="sub">Tus datos se quedan en el servidor</span></span>
+        <button class="pbtn" data-action="logout">Salir</button>
+      </div>
+    </div>
+  </section>
+
+  <section data-anim style="--d:.2s">
+    <div class="h-sec">Acerca de</div>
+    <div class="card">
+      <div class="setrow"><span class="setk">Registros</span>
+        <span class="setv num">${n("gastos")} gastos · ${n("suscripciones")} subs · ${n("categorias")} categorías · ${n("tarjetas")} tarjetas · ${n("metas")} metas</span></div>
+      <div class="setrow"><span class="setk">Servidor</span>
+        <span class="setv num">${esc(location.host)}</span></div>
+      <div class="setrow"><span class="setk">Vidrio<span class="sub">Si dice "sin soporte", este navegador no sabe desenfocar el fondo y el vidrio se ve como un tinte plano.</span></span>
+        <span class="setv num">${SOPORTA_VIDRIO ? "desenfoque activo" : "sin soporte"}</span></div>
+      <div class="setrow"><span class="setk">Versión</span>
+        <span class="setv num">${esc(window.__version || "—")}</span></div>
+      <div class="setrow"><span class="setk">Código</span>
+        <a class="pbtn" href="https://github.com/Ancordss/cofre" target="_blank" rel="noopener">Ancordss/cofre</a></div>
+    </div>
+  </section>`;
+}
+
+const VISTAS = { chat: viewChat, mes: viewMes, gastos: viewGastos, metas: viewMetas,
+                 limite: viewLimite, tarjetas: viewTarjetas, ajustes: viewAjustes };
 
 /* ─────────────────  pintado parcial  ─────────────────  */
 function pon(sel, txt) { $$(sel).forEach(e => { if (e.textContent !== txt) e.textContent = txt; }); }
@@ -1203,10 +1747,8 @@ function recalc() {
     caja.textContent = sinProximo ? "Anota el ingreso del próximo mes"
       : (c.margenTarjeta >= 0 ? "Puedes gastar con la tarjeta" : "Vas por encima del próximo mes");
   }
-  pon('[data-out="subs-nota"]', c.s.activas ? `${c.s.activas} activas` : "ninguna");
-  pon('[data-out="subs-total"]', fmt(c.s.total));
-  pon('[data-out="subs-conteo"]', `${c.s.activas} de ${state.suscripciones.length}`);
-  pon('[data-out="subs-pausadas"]', c.s.pausadas ? `${c.s.pausadas} pausadas` : "");
+  pon('[data-out="subs-nota"]', c.s.activas
+    ? `${c.s.activas} activas · ${fmt(c.s.total)}` : "ninguna");
   pon('[data-out="presupuesto-txt"]', fmt(c.c.presupuestado));
   pon('[data-out="gastado-txt"]', fmt(c.c.gastado));
   pon('[data-out="presupuesto"]', fmt(c.c.presupuestado));
@@ -1275,7 +1817,7 @@ function recalc() {
   void sel;
 }
 /* ─────────────────────────── chat ─────────────────────────── */
-let chatAbierto = false, enviando = false, chatMsgs = [], chatInicio = 0, chatReloj = null;
+let enviando = false, chatMsgs = [], chatInicio = 0, chatReloj = null;
 try { chatMsgs = JSON.parse(localStorage.getItem("cofre_chat") || "[]") || []; } catch { chatMsgs = []; }
 const guardarChat = () => { try { localStorage.setItem("cofre_chat", JSON.stringify(chatMsgs.slice(-24))); } catch {} };
 const formato = t => esc(t).replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
@@ -1287,33 +1829,18 @@ function burbuja(m) {
     ? `<div class="herramientas">usó: ${m.herramientas.join(" · ")}</div>` : "";
   return `<div class="bub ia">${cuerpo}${herr}</div>`;
 }
-function renderChat() {
-  const raiz = document.getElementById("chat-root");
-  if (!raiz) return;
-  if (!chatAbierto) { raiz.innerHTML = ""; return; }
-  raiz.innerHTML = `<div class="chat">
-    <div class="chat-top">
-      <div><span class="eyebrow">Asistente</span><div class="t">Pregúntale a la IA</div></div>
-      <button class="iconbtn" data-chat-cerrar="1" aria-label="Cerrar">✕</button>
-    </div>
-    <div class="chat-log" id="chat-log">
-      ${chatMsgs.length ? chatMsgs.map(burbuja).join("") : `
-        <div class="bub ia">Puedo ver tus números y también cambiar cosas: marcar pagos, anotar gastos,
-          ajustar presupuestos y límites. ¿Qué necesitas?</div>
-        <div class="sug">
-          ${["¿Cuánto puedo gastar todavía?", "¿Cómo voy este mes?", "¿Qué me conviene pagar primero?",
-             "¿Voy bien con mis metas?"].map(x =>
-            `<button class="pbtn" data-chat-sug="${esc(x)}">${esc(x)}</button>`).join("")}
-        </div>`}
-    </div>
-    <form class="chat-in" data-chat-form>
-      <input name="texto" placeholder="Escribe tu pregunta…" autocomplete="off" ${enviando ? "disabled" : ""}>
-      <button class="pbtn solido" type="submit" ${enviando ? "disabled" : ""}>Enviar</button>
-    </form>
-  </div>`;
+function pintarChat() {
   const log = document.getElementById("chat-log");
-  if (log) log.scrollTop = log.scrollHeight;
+  if (log) log.innerHTML = chatMsgs.map(burbuja).join("");
+  const f = document.querySelector("[data-chat-form]");
+  if (f) {
+    f.querySelector("input").disabled = enviando;
+    f.querySelector("button").disabled = enviando;
+  }
+  window.scrollTo(0, document.body.scrollHeight);
 }
+
+/* cronómetro visible mientras el modelo piensa */
 function relojChat() {
   const el = document.getElementById("chat-estado");
   if (!el || !enviando) return;
@@ -1329,7 +1856,7 @@ async function enviarChat(texto) {
   chatMsgs.push({ rol: "ai", texto: "", herramientas: [] });
   enviando = true; chatInicio = Date.now();
   clearInterval(chatReloj); chatReloj = setInterval(relojChat, 1000);
-  guardarChat(); renderChat();
+  guardarChat(); pintarChat();
   try {
     const res = await fetch("/api/chat", {
       method: "POST", credentials: "same-origin",
@@ -1359,18 +1886,18 @@ async function enviarChat(texto) {
         else if (ev.t === "texto") ult.texto = ev.v;
         else if (ev.t === "error") { ult.texto = ev.v; ult.error = true; }
         else if (ev.t === "fin" && ev.usadas?.length) ult.cambio = true;
-        renderChat();
+        pintarChat();
       }
     }
   } catch (e) {
     const ult = chatMsgs[chatMsgs.length - 1];
     ult.texto = e.message; ult.error = true;
   }
-  enviando = false; clearInterval(chatReloj); guardarChat(); renderChat();
+  enviando = false; clearInterval(chatReloj); guardarChat(); pintarChat();
   const ult = chatMsgs[chatMsgs.length - 1];
   if (ult?.cambio) {
     if (ult.texto) ult.texto += "\n\n_(actualicé la app con los cambios)_";
-    guardarChat(); renderChat();
+    guardarChat(); pintarChat();
     await sincronizar();
   }
 }
@@ -1378,30 +1905,33 @@ async function sincronizar() {
   const { status, data } = await api("/api/state");
   if (status !== 200 || !data) return;
   rev = data.rev; state = data.state; completar();
+  window.__version = data.version || "";
   pending = false; conflict = false; sync = "saved"; render();
 }
-document.getElementById("chat-root").addEventListener("submit", e => {
-  const f = e.target.closest("[data-chat-form]");
-  if (!f) return;
-  e.preventDefault();
-  const v = f.texto.value; f.texto.value = "";
-  enviarChat(v);
-});
-document.getElementById("chat-root").addEventListener("click", e => {
-  const b = e.target.closest("button");
-  if (!b) return;
-  if (b.dataset.chatCerrar) { chatAbierto = false; renderChat(); }
-  else if (b.dataset.chatSug) enviarChat(b.dataset.chatSug);
-});
-
 function pintarSync() {
   const el = $(".sync"); if (!el) return;
   el.dataset.s = sync;
   el.innerHTML = "<i></i>" + ({ saving: "guardando", saved: "guardado", error: "error",
     conflict: "conflicto", offline: "sin conexión", idle: "conectado" }[sync] || sync);
 }
+function haceCuanto(t) {
+  const s = Math.round((Date.now() - t) / 1000);
+  if (s < 90) return "hace un momento";
+  const m = Math.round(s / 60);
+  if (m < 60) return "hace " + m + " min";
+  const h = Math.round(m / 60);
+  return h < 24 ? "hace " + h + " h" : "hace " + Math.round(h / 24) + " días";
+}
 function pintarAviso() {
   const caja = $("#aviso"); if (!caja) return;
+  if (soloLectura) {
+    caja.innerHTML = `<div class="alert info">
+      <strong>Sin conexión.</strong> Estos son los últimos números que guardé${visto ? " (" + haceCuanto(visto) + ")" : ""}.
+      No puedes editar hasta que vuelva la señal.
+      <div class="actions"><button class="pbtn" data-action="reintentar">Reintentar</button></div>
+    </div>`;
+    return;
+  }
   if (errorMsg) {
     caja.innerHTML = `<div class="alert${sync === "error" || sync === "conflict" ? " error" : ""}">
       ${esc(errorMsg)}
@@ -1413,16 +1943,62 @@ function pintarAviso() {
   } else caja.innerHTML = "";
 }
 
+/* ── soporte del vidrio ─────────────────────────────────────────────────
+   El vidrio se apoya solo en backdrop-filter: desenfoque + tinte + filo.
+   Antes había además una refracción con un filtro SVG metido dentro, pero en
+   algunos navegadores eso no se pinta y se lleva por delante TODO el
+   backdrop-filter, desenfoque incluido: el vidrio quedaba como un tinte plano
+   y la barra de Blur no hacía nada. El efecto de las referencias del sistema
+   es blur simple, así que se quita y queda solo lo que funciona en todos
+   lados. Este dato se muestra en Ajustes para saber qué puede el navegador. */
+const SOPORTA_VIDRIO = (() => {
+  try {
+    return CSS.supports("backdrop-filter", "blur(1px)")
+        || CSS.supports("-webkit-backdrop-filter", "blur(1px)");
+  } catch { return false; }
+})();
+
+/* ── barra de pestañas ────────────────────────────────────────────────── */
+/* La cápsula se mide contra los botones de verdad y se desliza al elegido.
+   Cuando la barra acaba de construirse no se anima: sería un salto desde cero. */
+function moverPastilla(animar) {
+  const nav = $(".tabbar"); if (!nav) return;
+  const p = nav.querySelector(".pastilla");
+  const b = nav.querySelector('button[aria-selected="true"]');
+  if (!p || !b) return;
+  const caja = nav.querySelector(".wrap").getBoundingClientRect();
+  const rb = b.getBoundingClientRect();
+  if (!animar) p.style.transition = "none";
+  p.style.width = rb.width + "px";
+  p.style.transform = "translateX(" + Math.round(rb.left - caja.left) + "px)";
+  if (!animar) requestAnimationFrame(() => { p.style.transition = ""; });
+}
+/* Cambiar de pestaña NO vuelve a construir la app: solo cambia el contenido.
+   Así la barra sobrevive, que es lo que permite ver la cápsula deslizarse. */
+function cambiarTab(k) {
+  if (!TABS_VALIDAS.includes(k)) return;
+  tab = k; localStorage.setItem("cofre_tab", tab);
+  $$(".tabbar button").forEach(b => b.setAttribute("aria-selected", String(b.dataset.tab === k)));
+  const engrane = $(".gear"); if (engrane) engrane.dataset.on = String(k === "ajustes");
+  const m = $("main"); if (m) m.innerHTML = '<div id="aviso"></div>' + VISTAS[tab]();
+  moverPastilla(true);
+  recalc(); pintarSync(); pintarAviso();
+  window.scrollTo(0, 0);
+}
+
 function render() {
+  document.body.classList.toggle("solo-lectura", authed && soloLectura);
   if (!authed) { $("#app").innerHTML = viewLogin(errorMsg); pintarSync(); return; }
   document.body.style.paddingBottom = "";
   $("#app").innerHTML = `
-  <header class="masthead"><div class="wrap">
+  <header class="masthead" data-vidrio-luz><div class="wrap">
     <div class="mh-top">
       <span class="eyebrow">Cofre</span>
       <span class="mh-right">
         <span class="sync" data-s="idle"><i></i>conectado</span>
         <span class="mh-month" data-out="mes-actual">—</span>
+        <button class="iconbtn gear" data-tab="ajustes" data-on="${tab === "ajustes"}"
+                aria-label="Ajustes">${ICONOS.ajustes}</button>
       </span>
     </div>
     <div class="mh-main">
@@ -1442,16 +2018,38 @@ function render() {
     </div>
   </div></header>
   <main><div id="aviso"></div>${VISTAS[tab]()}</main>
-  <button class="fab" data-chat-abrir="1">✦ Preguntar</button>
   <nav class="tabbar"><div class="wrap">
-    ${PESTANAS.map(([k, t]) => `<button data-tab="${k}" aria-selected="${tab === k}">${t}</button>`).join("")}
+    <span class="pastilla" aria-hidden="true"></span>
+    ${PESTANAS.map(([k, t]) => `<button data-tab="${k}" aria-selected="${tab === k}">`
+      + ICONOS[k] + `<span>${t}</span></button>`).join("")}
   </div></nav>`;
-  recalc(); pintarSync(); pintarAviso(); renderChat();
+  recalc(); pintarSync(); pintarAviso();
+  moverPastilla(false);
 }
 
 /* ─────────────────────────── eventos ─────────────────────────── */
 $("#app").addEventListener("input", e => {
   const el = e.target, d = el.dataset;
+  /* el vidrio no es un dato del servidor: se guarda aquí y se aplica en vivo */
+  if (d.vidrio !== undefined) {
+    escribirPref("vidrio", el.value);
+    el.style.setProperty("--pct", el.value + "%");
+    /* el tinte y el desenfoque son solo variables CSS: se aplican al instante */
+    aplicarVidrio();
+    return;
+  }
+  if (d.desenfoque !== undefined) {
+    escribirPref("blur", el.value);
+    el.style.setProperty("--pct", el.value + "%");
+    aplicarVidrio();
+    return;
+  }
+  /* el color y el resalte no son datos del servidor: viven en el dispositivo */
+  if (d.resalteSelect !== undefined) {
+    escribirPref("resalte", el.value);
+    aplicarAcento(); render();
+    return;
+  }
   if (d.meta === "ingreso") state.ingreso = parsear(el.value) ?? 0;
   else if (d.meta === "ingresoProximo") state.ingresoProximo = parsear(el.value) ?? 0;
   else if (d.meta === "usdGtq") state.usdGtq = parsear(el.value) ?? 0;
@@ -1515,6 +2113,14 @@ $("#app").addEventListener("focusout", e => {
 });
 
 $("#app").addEventListener("submit", async e => {
+  const chat = e.target.closest("[data-chat-form]");
+  if (chat) {
+    e.preventDefault();
+    const texto = chat.texto.value;
+    chat.texto.value = "";
+    enviarChat(texto);
+    return;
+  }
   const form = e.target.closest("[data-login]"); if (!form) return;
   e.preventDefault();
   const btn = form.querySelector("button"); btn.disabled = true;
@@ -1668,19 +2274,29 @@ $("#app").addEventListener("click", async e => {
           monto: v, fecha: new Date().toISOString().slice(0, 10), hecho: false, mes: state.mes });
         programarGuardado(); render();
       } else mon?.focus();
-    } else if (d.chatAbrir) {
-      chatAbierto = true; renderChat();
+    } else if (d.chatSug) {
+      await enviarChat(d.chatSug);
+    } else if (d.temaSel) {
+      localStorage.setItem("cofre_tema", d.temaSel); aplicarTema(); render();
     } else if (d.action === "usar-sugerido") {
       setLimite(cascada().limiteSugerido); programarGuardado(); render();
+    } else if (d.acento) {
+      escribirPref("acento", d.acento);
+      aplicarAcento(); render();
     } else if (d.tab) {
-      tab = d.tab; localStorage.setItem("cofre_tab", tab); render(); window.scrollTo(0, 0);
+      cambiarTab(d.tab);
+    } else if (d.action === "reintentar") {
+      btn.disabled = true; btn.textContent = "Buscando…";
+      await hidratar();
     } else if (d.action === "export") {
       descargar("cofre-respaldo.json", JSON.stringify(state, null, 2), "application/json");
     } else if (d.action === "import") { $("#file-import").click(); }
     else if (d.action === "print") { window.print(); }
     else if (d.action === "traer") { await hidratar(); }
     else if (d.action === "logout") {
-      await api("/api/logout", { method: "POST" }); authed = false; state = null; render();
+      await api("/api/logout", { method: "POST" }); authed = false; state = null;
+      try { localStorage.removeItem("cofre_copia"); CLAVES_PREF.forEach(k => localStorage.removeItem("cofre_" + k)); } catch {}
+      soloLectura = false; render();
     } else if (d.action === "tasa") {
       btn.disabled = true; btn.textContent = "Consultando…";
       const { status, data } = await api("/api/tipo-cambio");
@@ -1719,6 +2335,113 @@ function siguienteMes(label) {
   i++; if (i > 11) { i = 0; anio++; }
   return MESES[i] + " " + anio;
 }
+/* ── color del acento ───────────────────────────────────────────────────
+   El mismo juego del sistema. Cada color trae sus valores para claro y
+   oscuro y, además, el color de la letra que va encima del relleno: en
+   amarillo el blanco no se lee, así que ahí va oscura. "Multicolor" es el
+   azul de siempre. */
+const ACENTOS = {
+  multicolor:{ nombre:"Multicolor", l:["#007AFF","#0062CC","#E6F0FF","#FFFFFF"], d:["#0A84FF","#409CFF","#0A2540","#FFFFFF"] },
+  azul:      { nombre:"Azul",       l:["#007AFF","#0062CC","#E6F0FF","#FFFFFF"], d:["#0A84FF","#409CFF","#0A2540","#FFFFFF"] },
+  morado:    { nombre:"Morado",     l:["#8944AB","#6E3389","#F5E9FA","#FFFFFF"], d:["#BF5AF2","#A34FD6","#2A1436","#FFFFFF"] },
+  rosa:      { nombre:"Rosa",       l:["#D6357B","#AE2963","#FCE9F1","#FFFFFF"], d:["#FF375F","#FF6B8A","#33101D","#FFFFFF"] },
+  rojo:      { nombre:"Rojo",       l:["#D70015","#B00011","#FFE8E6","#FFFFFF"], d:["#FF453A","#FF6B60","#331512","#FFFFFF"] },
+  naranja:   { nombre:"Naranja",    l:["#C25E00","#9E4C00","#FFF0E0","#FFFFFF"], d:["#FF9F0A","#FFB340","#33240E","#1C1C1E"] },
+  amarillo:  { nombre:"Amarillo",   l:["#A67C00","#8A6600","#FFF8E0","#FFFFFF"], d:["#FFD60A","#FFE04D","#332C0E","#1C1C1E"] },
+  verde:     { nombre:"Verde",      l:["#248A3D","#1C6E31","#E3F6E7","#FFFFFF"], d:["#30D158","#5BE47C","#122A19","#1C1C1E"] },
+  gris:      { nombre:"Gris",       l:["#6C6C70","#545458","#EFEFF2","#FFFFFF"], d:["#98989D","#AEAEB2","#2C2C2E","#1C1C1E"] },
+};
+const ORDEN_ACENTOS = ["multicolor","azul","morado","rosa","rojo","naranja","amarillo","verde","gris"];
+/* la muestra de "Multicolor" es el arcoíris, como en el sistema */
+const ARCOIRIS = "conic-gradient(from 0deg,#FF3B30,#FF9500,#FFD60A,#34C759,#00C7BE,#0A84FF,#5856D6,#BF5AF2,#FF375F,#FF3B30)";
+
+function esOscuro() {
+  const r = document.documentElement;
+  return r.dataset.tema === "dark" ||
+    (r.dataset.tema !== "light" && matchMedia("(prefers-color-scheme:dark)").matches);
+}
+/* ── preferencias ───────────────────────────────────────────────────────
+   El color, el vidrio y el desenfoque viven en tus datos, no en el navegador:
+   así los eliges en el computador y aparecen en el teléfono. localStorage
+   queda solo como copia local, para pintar al instante al abrir sin esperar
+   al servidor. */
+const CLAVES_PREF = ["acento", "resalte", "vidrio", "blur"];
+function leerPref(k) {
+  const delServidor = state && state.prefs ? state.prefs[k] : "";
+  if (delServidor) return String(delServidor);
+  return localStorage.getItem("cofre_" + k) || "";
+}
+function escribirPref(k, v) {
+  localStorage.setItem("cofre_" + k, v);
+  if (!state) return;
+  if (!state.prefs) state.prefs = {};
+  state.prefs[k] = v;
+  programarGuardado();
+}
+function acentoElegido() {
+  const k = leerPref("acento");
+  return ACENTOS[k] ? k : "multicolor";
+}
+function resalteElegido() {
+  const k = leerPref("resalte");
+  return ACENTOS[k] ? k : "multicolor";
+}
+/* Un solo sitio decide el color de todo: botones de acción, pestañas, barras,
+   la burbuja del chat y el texto que seleccionas. */
+function aplicarAcento(oscuro) {
+  if (oscuro === undefined) oscuro = esOscuro();
+  const r = document.documentElement.style;
+  const a = ACENTOS[acentoElegido()][oscuro ? "d" : "l"];
+  r.setProperty("--accent", a[0]);
+  r.setProperty("--accent-2", a[1]);
+  r.setProperty("--accent-soft", a[2]);
+  r.setProperty("--acento-texto", a[3]);
+  r.setProperty("--resalte", ACENTOS[resalteElegido()][oscuro ? "d" : "l"][0]);
+}
+
+/* ── intensidad del vidrio ──────────────────────────────────────────────
+   0 lo deja opaco del todo; 100 lo lleva al extremo contrario, casi solo
+   cristal. Se mueve desde Ajustes y viaja con tus datos. */
+function vidrioN() {
+  const v = parseInt(leerPref("vidrio"), 10);
+  return Number.isFinite(v) ? Math.min(100, Math.max(0, v)) : 70;
+}
+/* El desenfoque va aparte del vidrio: son dos cosas distintas. El vidrio es
+   cuánto se ve a través; el desenfoque, cuánto se difumina lo de atrás. */
+function blurN() {
+  const v = parseInt(leerPref("blur"), 10);
+  return Number.isFinite(v) ? Math.min(100, Math.max(0, v)) : 70;
+}
+function aplicarVidrio(oscuro) {
+  const r = document.documentElement;
+  if (oscuro === undefined) oscuro = esOscuro();
+  const n = vidrioN(), b = blurN();
+  r.style.setProperty("--vidrio-alfa", (oscuro ? .90 - n * .0063 : .98 - n * .006).toFixed(3));
+  r.style.setProperty("--vidrio-filtro",
+    n === 0 ? "none"
+            : "saturate(" + (100 + n) + "%)" + (b > 0 ? " blur(" + Math.round(b * .6) + "px)" : ""));
+}
+/* tema: el del sistema por omisión, o forzado desde Ajustes */
+function aplicarTema() {
+  const t = localStorage.getItem("cofre_tema") || "sistema";
+  const r = document.documentElement;
+  if (t === "claro") r.dataset.tema = "light";
+  else if (t === "oscuro") r.dataset.tema = "dark";
+  else delete r.dataset.tema;
+  /* la barra del navegador acompaña al tema elegido */
+  const oscuro = t === "oscuro" || (t === "sistema" && matchMedia("(prefers-color-scheme:dark)").matches);
+  document.querySelector('meta[name="theme-color"]').content = oscuro ? "#000000" : "#F2F2F7";
+  aplicarVidrio(oscuro);
+  aplicarAcento(oscuro);
+}
+matchMedia("(prefers-color-scheme:dark)").addEventListener("change", aplicarTema);
+/* al girar el teléfono o cambiar de tamaño, la cápsula y los mapas de la
+   lente se recalculan: los dos dependen de la medida real de las piezas */
+let tMedida = 0;
+addEventListener("resize", () => {
+  clearTimeout(tMedida);
+  tMedida = setTimeout(() => { moverPastilla(false); }, 140);
+});
 function descargar(nombre, texto, tipo) {
   const a = document.createElement("a");
   a.href = URL.createObjectURL(new Blob([texto], { type: tipo }));
@@ -1726,7 +2449,22 @@ function descargar(nombre, texto, tipo) {
   setTimeout(() => URL.revokeObjectURL(a.href), 1000);
 }
 
+aplicarTema();
 hidratar();
+
+/* PWA: instalable y con la app disponible sin señal. La API nunca se cachea,
+   así que los números siempre vienen del servidor. */
+if ("serviceWorker" in navigator) {
+  addEventListener("load", () => navigator.serviceWorker.register("/sw.js").catch(() => {}));
+  /* Cuando entra una versión nueva, se toma sola. Sin esto, si tenías la app
+     abierta desde antes de un cambio, seguías viendo la vieja hasta cerrarla
+     del todo — y así no hay forma de saber si un arreglo llegó o no.
+     La primera instalación no recarga: solo cuando ya había una versión. */
+  const habiaVersion = !!navigator.serviceWorker.controller;
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
+    if (habiaVersion) location.reload();
+  });
+}
 </script>
 </body>
 </html>

@@ -1,0 +1,25 @@
+{
+  "name": "Cofre — control de gastos",
+  "short_name": "Cofre",
+  "description": "Gastos fijos, presupuestos, metas de ahorro y deuda de tarjetas, con un asistente que ve tus números.",
+  "lang": "es-GT",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
+  "orientation": "portrait",
+  "background_color": "#F2F2F7",
+  "theme_color": "#F2F2F7",
+  "categories": ["finance", "productivity"],
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Preguntarle al asistente", "short_name": "Chat", "url": "/?tab=chat" },
+    { "name": "El mes", "short_name": "Mes", "url": "/?tab=mes" },
+    { "name": "Gastos fijos", "short_name": "Gastos", "url": "/?tab=gastos" },
+    { "name": "Tarjetas", "short_name": "Tarjetas", "url": "/?tab=tarjetas" }
+  ]
+}
