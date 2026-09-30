@@ -37,12 +37,14 @@
   color-scheme:light dark;
   /* superficies */
   --bg:#F2F2F7; --surface:#FFFFFF; --surface-2:#F2F2F7; --surface-3:#E9E9EE;
-  --glass:rgba(242,242,247,.78);
-  /* píldora flotante: el vidrio refracta lo que pasa por debajo al hacer scroll */
-  --glass-pill:rgba(255,255,255,.72);
-  --blur-pill:saturate(180%) blur(24px);
-  --pill-filo:inset 0 1px 0 rgba(255,255,255,.85), inset 0 0 0 .5px rgba(255,255,255,.4);
-  --pill-sombra:0 10px 30px rgba(0,0,0,.16), 0 2px 8px rgba(0,0,0,.07);
+  /* vidrio: una sola receta para todo lo que flota sobre el contenido.
+     Más desenfoque y menos opacidad = más se nota que es vidrio y no una
+     caja gris. Las tarjetas se quedan planas a propósito: ahí manda el dato. */
+  --vidrio:rgba(255,255,255,.55);
+  --vidrio-blur:saturate(200%) blur(40px);
+  --vidrio-brillo:linear-gradient(180deg, rgba(255,255,255,.55), rgba(255,255,255,.06) 60%, rgba(255,255,255,0));
+  --vidrio-filo:inset 0 1px 0 rgba(255,255,255,.95), inset 0 0 0 .5px rgba(255,255,255,.5);
+  --vidrio-sombra:0 12px 40px rgba(0,0,0,.16), 0 2px 8px rgba(0,0,0,.07);
   /* texto */
   --text:#1C1C1E; --text-2:#3C3C43; --text-3:#8E8E93;
   /* acento y semánticos */
@@ -63,11 +65,11 @@
 }
 @media (prefers-color-scheme:dark){ html:not([data-tema="light"]){
     --bg:#000000; --surface:#1C1C1E; --surface-2:#2C2C2E; --surface-3:#3A3A3C;
-    --glass:rgba(0,0,0,.72);
-    --glass-pill:rgba(28,28,30,.62);
-    --blur-pill:saturate(180%) blur(28px);
-    --pill-filo:inset 0 1px 0 rgba(255,255,255,.13), inset 0 0 0 .5px rgba(255,255,255,.06);
-    --pill-sombra:0 12px 34px rgba(0,0,0,.55), 0 2px 8px rgba(0,0,0,.35);
+    --vidrio:rgba(30,30,34,.46);
+    --vidrio-blur:saturate(200%) blur(44px);
+    --vidrio-brillo:linear-gradient(180deg, rgba(255,255,255,.14), rgba(255,255,255,.02) 60%, rgba(255,255,255,0));
+    --vidrio-filo:inset 0 1px 0 rgba(255,255,255,.16), inset 0 0 0 .5px rgba(255,255,255,.07);
+    --vidrio-sombra:0 14px 46px rgba(0,0,0,.55), 0 2px 8px rgba(0,0,0,.35);
     --text:#FFFFFF; --text-2:#EBEBF5; --text-3:#8E8E93;
     --accent:#0A84FF; --accent-2:#409CFF; --accent-soft:#0A2540;
     --green:#5BE47C; --green-soft:#122A19; --green-line:#30D158;
@@ -80,11 +82,11 @@
   }}
 html[data-tema="dark"]{
     --bg:#000000; --surface:#1C1C1E; --surface-2:#2C2C2E; --surface-3:#3A3A3C;
-    --glass:rgba(0,0,0,.72);
-    --glass-pill:rgba(28,28,30,.62);
-    --blur-pill:saturate(180%) blur(28px);
-    --pill-filo:inset 0 1px 0 rgba(255,255,255,.13), inset 0 0 0 .5px rgba(255,255,255,.06);
-    --pill-sombra:0 12px 34px rgba(0,0,0,.55), 0 2px 8px rgba(0,0,0,.35);
+    --vidrio:rgba(30,30,34,.46);
+    --vidrio-blur:saturate(200%) blur(44px);
+    --vidrio-brillo:linear-gradient(180deg, rgba(255,255,255,.14), rgba(255,255,255,.02) 60%, rgba(255,255,255,0));
+    --vidrio-filo:inset 0 1px 0 rgba(255,255,255,.16), inset 0 0 0 .5px rgba(255,255,255,.07);
+    --vidrio-sombra:0 14px 46px rgba(0,0,0,.55), 0 2px 8px rgba(0,0,0,.35);
     --text:#FFFFFF; --text-2:#EBEBF5; --text-3:#8E8E93;
     --accent:#0A84FF; --accent-2:#409CFF; --accent-soft:#0A2540;
     --green:#5BE47C; --green-soft:#122A19; --green-line:#30D158;
@@ -125,9 +127,11 @@ small,.small{font-size:12.5px; color:var(--text-3)}
 
 /* ── cabecera ─────────────────────────────────────────────────────────── */
 .masthead{
-  position:sticky; top:0; z-index:20; background:var(--glass);
-  -webkit-backdrop-filter:saturate(180%) blur(22px); backdrop-filter:saturate(180%) blur(22px);
-  border-bottom:.5px solid var(--border); padding:12px var(--pad) 14px;
+  position:sticky; top:0; z-index:20;
+  background-color:var(--vidrio); background-image:var(--vidrio-brillo);
+  -webkit-backdrop-filter:var(--vidrio-blur); backdrop-filter:var(--vidrio-blur);
+  box-shadow:var(--vidrio-filo); border-bottom:.5px solid var(--border);
+  padding:12px var(--pad) 14px;
   padding-top:calc(12px + env(safe-area-inset-top));
 }
 .masthead .wrap{max-width:880px; margin:0 auto}
@@ -409,14 +413,25 @@ table.mx tr.tot td:first-child{background:var(--surface-2)}
 /* ── botones ──────────────────────────────────────────────────────────── */
 .actions{display:flex; gap:10px; flex-wrap:wrap; align-items:center}
 .pbtn{
-  padding:12px 18px; border:0; border-radius:var(--r-pill); background:var(--surface-2);
+  padding:12px 18px; border:0; border-radius:var(--r-pill);
+  background-color:color-mix(in srgb, var(--surface) 62%, transparent);
+  background-image:var(--vidrio-brillo);
+  -webkit-backdrop-filter:var(--vidrio-blur); backdrop-filter:var(--vidrio-blur);
   font-size:14.5px; font-weight:600; color:var(--accent); transition:.2s
 }
-.pbtn:hover{background:var(--accent-soft)}
+.pbtn:hover{background-color:var(--accent-soft)}
 .pbtn:active{transform:scale(.97)}
-.pbtn.solido{background:var(--accent); color:#fff; box-shadow:0 4px 14px rgba(0,122,255,.3)}
-.pbtn.solido:hover{background:var(--accent-2)}
+.pbtn.solido{
+  /* el vidrio se nota por el brillo de arriba, no por dejar pasar el fondo:
+     un botón de acción translúcido pierde contraste y no se lee */
+  background-color:var(--accent); color:#fff;
+  box-shadow:var(--vidrio-filo), 0 6px 18px color-mix(in srgb, var(--accent) 30%, transparent)
+}
+.pbtn.solido:hover{background-color:var(--accent-2)}
 .pbtn[disabled]{opacity:.45; cursor:default; transform:none}
+/* el botón que vive dentro del campo del chat no vuelve a desenfocar: ya está
+   sobre vidrio, y anidar dos desenfoques cuesta caro sin ganar nada */
+.chat-in .pbtn{-webkit-backdrop-filter:none; backdrop-filter:none}
 .note{font-size:13.5px; line-height:1.5; color:var(--text-3); margin:0 0 14px; max-width:64ch}
 .alert{
   background:var(--accent-soft); color:var(--text); border-radius:var(--r);
@@ -452,10 +467,10 @@ body.solo-lectura #aviso{pointer-events:auto}
   position:fixed; z-index:30; left:50%; transform:translateX(-50%);
   bottom:calc(12px + env(safe-area-inset-bottom));
   width:min(94vw, 470px);
-  background:var(--glass-pill);
-  -webkit-backdrop-filter:var(--blur-pill); backdrop-filter:var(--blur-pill);
+  background-color:var(--vidrio); background-image:var(--vidrio-brillo);
+  -webkit-backdrop-filter:var(--vidrio-blur); backdrop-filter:var(--vidrio-blur);
   border-radius:var(--r-pill);
-  box-shadow:var(--pill-sombra), var(--pill-filo);
+  box-shadow:var(--vidrio-sombra), var(--vidrio-filo);
   padding:5px
 }
 .tabbar .wrap{display:flex; gap:2px}
@@ -503,9 +518,9 @@ body.solo-lectura #aviso{pointer-events:auto}
 .chat-in{
   position:sticky; bottom:calc(94px + env(safe-area-inset-bottom)); z-index:6;
   display:flex; gap:8px; padding:9px; margin-top:8px;
-  background:var(--glass); -webkit-backdrop-filter:saturate(180%) blur(20px);
-  backdrop-filter:saturate(180%) blur(20px);
-  border:1px solid var(--border); border-radius:var(--r-pill); box-shadow:var(--sh-2)
+  background-color:var(--vidrio); background-image:var(--vidrio-brillo);
+  -webkit-backdrop-filter:var(--vidrio-blur); backdrop-filter:var(--vidrio-blur);
+  border:0; border-radius:var(--r-pill); box-shadow:var(--vidrio-sombra), var(--vidrio-filo)
 }
 .chat-in input{flex:1; min-width:0; font-size:16px; padding:11px 15px; border:0; background:transparent}
 .chat-in input:focus{outline:none}
@@ -531,13 +546,19 @@ body.solo-lectura #aviso{pointer-events:auto}
 .setk .sub{display:block; font-size:12.5px; color:var(--text-3); margin-top:2px}
 .setv{font-size:15px; font-weight:600; color:var(--text-2); display:flex; align-items:center; gap:7px}
 .seg{
-  display:flex; gap:2px; padding:3px; background:var(--surface-2); border-radius:var(--r-sm)
+  display:flex; gap:2px; padding:3px; border-radius:var(--r-sm);
+  background-color:color-mix(in srgb, var(--surface-2) 55%, transparent);
+  background-image:var(--vidrio-brillo);
+  box-shadow:var(--vidrio-filo)
 }
 .seg button{
   border:0; background:none; padding:8px 14px; border-radius:var(--r-xs);
   font-size:13.5px; font-weight:600; color:var(--text-2); transition:.2s
 }
-.seg button[aria-pressed=true]{background:var(--surface); color:var(--accent); box-shadow:var(--sh-1)}
+.seg button[aria-pressed=true]{
+  background-color:color-mix(in srgb, var(--surface) 72%, transparent); color:var(--accent);
+  box-shadow:var(--vidrio-filo)
+}
 
 /* ── filas de suscripción (dentro de Mes) ─────────────────────────────── */
 .subrow{display:flex; flex-wrap:wrap; align-items:center; gap:8px; padding:12px 0; position:relative}
@@ -581,7 +602,7 @@ body.solo-lectura #aviso{pointer-events:auto}
 @media print{
   :root{--bg:#fff; --surface:#fff; --surface-2:#fff; --surface-3:#eee; --text:#000;
         --text-2:#222; --text-3:#666; --border:#bbb; --border-2:#ddd; --sh-1:none; --sh-2:none;
-        --glass-pill:#fff; --pill-filo:none; --pill-sombra:none; --blur-pill:none}
+        --vidrio:#fff; --vidrio-blur:none; --vidrio-brillo:none; --vidrio-filo:none; --vidrio-sombra:none}
   .tabbar,.fab,.addbtn,.actions,.more,.tick,.iconbtn,.mtools,.chips,.sync,.quick,
   details.mx > summary,.chat,.limbox::before{display:none !important}
   body{background:#fff; padding:0}
